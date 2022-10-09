@@ -52,10 +52,11 @@ class GPUUtils:
 
     @staticmethod
     def assume_discrete(vendors: list):
-        if "nvidia" in vendors and "amd" in vendors:
-            return {"integrated": "amd", "discrete": "nvidia"}
-        if "nvidia" in vendors and "intel" in vendors:
-            return {"integrated": "intel", "discrete": "nvidia"}
+        if "nvidia" in vendors:
+            if "amd" in vendors:
+                return {"integrated": "amd", "discrete": "nvidia"}
+            if "intel" in vendors:
+                return {"integrated": "intel", "discrete": "nvidia"}
         if "amd" in vendors and "intel" in vendors:
             return {"integrated": "intel", "discrete": "amd"}
         return {}
@@ -138,8 +139,7 @@ class GPUUtils:
                 result["vendors"][_check] = gpus[_check]
 
         if len(found) >= 2:
-            _discrete = self.assume_discrete(found)
-            if _discrete:
+            if _discrete := self.assume_discrete(found):
                 _integrated = _discrete["integrated"]
                 _discrete = _discrete["discrete"]
                 result["prime"]["integrated"] = gpus[_integrated]

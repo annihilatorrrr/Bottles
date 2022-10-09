@@ -63,11 +63,7 @@ class LibraryEntry(Gtk.Box):
         self.program = self.__get_program()
         self.set_size_request(240, 420)
 
-        if len(entry['name']) >= 15:
-            name = entry['name'][:13] + "…"
-        else:
-            name = entry['name']
-
+        name = entry['name'][:13] + "…" if len(entry['name']) >= 15 else entry['name']
         self.label_name.set_text(name)
         self.label_bottle.set_text(entry['bottle']['name'])
 
@@ -118,16 +114,13 @@ class LibraryEntry(Gtk.Box):
         bottles = self.manager.local_bottles
         if self.entry['bottle']['name'] in bottles:
             return bottles[self.entry['bottle']['name']]
-        parent = self.get_parent()
-        if parent:
+        if parent := self.get_parent():
             parent.remove(self)  # TODO: Remove from list
 
     def __get_program(self):
         programs = self.manager.get_programs(self.config)
         programs = [p for p in programs if p["id"] == self.entry["id"] or p["name"] == self.entry["name"]]
-        if len(programs) == 0:
-            return None  # TODO: remove entry from library
-        return programs[0]
+        return programs[0] if programs else None
 
     def __reset_buttons(self, result=False, error=False):
         status = False

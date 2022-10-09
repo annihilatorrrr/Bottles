@@ -115,9 +115,10 @@ class InstallerDialog(Adw.Window):
             "deps": _("Installing Windows dependencies…"),
             "params": _("Configuring the bottle…"),
             "steps": _("Processing installer steps…"),
-            "exe": _("Installing the {}…".format(installer[1].get("Name"))),
-            "checks": _("Performing final checks…")
+            "exe": _(f'Installing the {installer[1].get("Name")}…'),
+            "checks": _("Performing final checks…"),
         }
+
 
         self.status_init.set_title(installer[1].get("Name"))
         self.install_status_page.set_title(_("Installing {0}…").format(installer[1].get("Name")))

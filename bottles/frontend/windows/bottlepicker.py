@@ -66,8 +66,7 @@ class BottlePickerDialog(Adw.ApplicationWindow):
         quit()
 
     def __select(self, *_args):
-        row = self.list_bottles.get_selected_row()
-        if row:
+        if row := self.list_bottles.get_selected_row():
             self.destroy()
             subprocess.Popen(["bottles-cli", "run", "-b", row.bottle, "-e", self.arg_exe])
 

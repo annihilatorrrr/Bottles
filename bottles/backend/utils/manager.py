@@ -55,7 +55,7 @@ class ManagerUtils:
                 bottle_path = config.get("Path")
             path = f"{bottle_path}/drive_c"
         elif component != "":
-            if path_type in ["runner", "runner:proton"]:
+            if path_type in {"runner", "runner:proton"}:
                 path = ManagerUtils.get_runner_path(component)
             elif path_type == "dxvk":
                 path = ManagerUtils.get_dxvk_path(component)
@@ -90,9 +90,7 @@ class ManagerUtils:
 
     @staticmethod
     def get_runner_path(runner: str) -> str:
-        if runner.startswith("sys-"):
-            return runner
-        return f"{Paths.runners}/{runner}"
+        return runner if runner.startswith("sys-") else f"{Paths.runners}/{runner}"
 
     @staticmethod
     def get_dxvk_path(dxvk: str) -> str:
@@ -146,9 +144,8 @@ class ManagerUtils:
                         f_out.write(f_in.read(1))
                         _size = i / file_size
 
-                        if fn_update:
-                            if _size % 0.1 == 0:
-                                GLib.idle_add(fn_update, _size)
+                        if fn_update and _size % 0.1 == 0:
+                            GLib.idle_add(fn_update, _size)
                     GLib.idle_add(fn_update, 1)
             return file_new_path
         except (OSError, IOError):
@@ -193,10 +190,9 @@ class ManagerUtils:
                     ico_dest_temp = f"{ico_dest_temp}.ico"
                 im = ImageMagickUtils(ico_dest_temp)
                 im.convert(ico_dest)
-                icon = ico_dest
             else:
                 shutil.move(ico_dest_temp, ico_dest)
-                icon = ico_dest
+            icon = ico_dest
         except:  # TODO: handle those
             pass
 
@@ -375,24 +371,15 @@ class ManagerUtils:
             if from_name not in names:
                 raise ValueError("Given name not in list.")
             i = names.index(from_name)
-            if get_index:
-                return i
-            return from_name, locales[i]
-
+            return i if get_index else (from_name, locales[i])
         if from_locale:
             if from_locale not in locales:
                 raise ValueError("Given locale not in list.")
             i = locales.index(from_locale)
-            if get_index:
-                return i
-            return from_locale, names[i]
-
+            return i if get_index else (from_locale, names[i])
         if isinstance(from_index, int):
-            if from_index not in range(0, len(locales)):
+            if from_index not in range(len(locales)):
                 raise ValueError("Given index not in range.")
             return locales[from_index], names[from_index]
 
-        if get_locales:
-            return locales
-
-        return names
+        return locales if get_locales else names

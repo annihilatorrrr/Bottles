@@ -46,7 +46,7 @@ class DataManager:
         try:
             with open(self.__p_data, 'r') as s:
                 self.__data = yaml.load(s)
-                if self.__data == None:
+                if self.__data is None:
                     raise AttributeError
         except FileNotFoundError:
             logging.error('Data file not found. Creating new one.', )
@@ -74,11 +74,7 @@ class DataManager:
             else:
                 self.__data[key] = value
         else:
-            if of_type == list:
-                self.__data[key] = [value]
-            else:
-                self.__data[key] = value
-
+            self.__data[key] = [value] if of_type == list else value
         with contextlib.suppress(FileNotFoundError):
             with open(self.__p_data, 'w') as s:
                 yaml.dump(self.__data, s)

@@ -52,7 +52,7 @@ class TaskEntry(Adw.ActionRow):
 
         if not completed:
             percent = int(count * block_size * 100 / total_size)
-            self.set_subtitle(f'{str(percent)}%')
+            self.set_subtitle(f'{percent}%')
         else:
             percent = 100
 

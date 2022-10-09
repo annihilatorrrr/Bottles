@@ -75,15 +75,16 @@ class SandboxManager:
         if self.share_sound:
             _cmd.append(f"--ro-bind /run/user/{self.__uid}/pulse /run/user/{self.__uid}/pulse")
 
-        if self.share_gpu:
-            pass  # not implemented yet
-
         if self.share_display:
             _cmd.append("--dev-bind /dev/video0 /dev/video0")
 
-        _cmd.append("--share-net" if self.share_net else "--unshare-net")
-        _cmd.append("--share-user" if self.share_user else "--unshare-user")
-        _cmd.append(cmd)
+        _cmd.extend(
+            (
+                "--share-net" if self.share_net else "--unshare-net",
+                "--share-user" if self.share_user else "--unshare-user",
+                cmd,
+            )
+        )
 
         return _cmd
 
@@ -94,9 +95,7 @@ class SandboxManager:
             _cmd += [f"--env={k}={shlex.quote(v)}" for k, v in self.envs.items()]
 
         if self.share_host_ro:
-            _cmd.append("--sandbox")
-            _cmd.append("--sandbox-expose-path-ro=/")
-
+            _cmd.extend(("--sandbox", "--sandbox-expose-path-ro=/"))
         if self.chdir:
             _cmd.append(f"--directory={shlex.quote(self.chdir)}")
             _cmd.append(f"--sandbox-expose-path={shlex.quote(self.chdir)}")

@@ -36,29 +36,28 @@ class StateEntry(Adw.ActionRow):
     def __init__(self, parent, config, state, active, **kwargs):
         super().__init__(**kwargs)
 
-        # common variables and references
-        self.parent = parent
         self.window = parent.window
         self.manager = parent.window.manager
         self.queue = parent.window.page_details.queue
+        self.parent = parent
         self.state = state
 
         if config.get("Versioning"):
-            self.state_name = "#{} - {}".format(
-                state[0], 
-                datetime.strptime(
-                    state[1]["Creation_Date"], "%Y-%m-%d %H:%M:%S.%f")
-                ).strftime("%d %B %Y, %H:%M")
-                
+            self.state_name = f'#{state[0]} - {datetime.strptime(state[1]["Creation_Date"], "%Y-%m-%d %H:%M:%S.%f")}'.strftime(
+                "%d %B %Y, %H:%M"
+            )
+
+
             self.set_subtitle(self.state[1]["Comment"])
             if state[0] == config.get("State"):
                 self.add_css_class("current-state")
         else:
-            self.state_name = "{} - {}".format(state[0], datetime.fromtimestamp(state[1]["timestamp"]).strftime("%d %B %Y, %H:%M"))
+            self.state_name = f'{state[0]} - {datetime.fromtimestamp(state[1]["timestamp"]).strftime("%d %B %Y, %H:%M")}'
+
             self.set_subtitle(state[1]["message"])
             if active:
                 self.add_css_class("current-state")
-            
+
         self.set_title(self.state_name)
         self.config = config
         self.versioning_manager = self.manager.versioning_manager

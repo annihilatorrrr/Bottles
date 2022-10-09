@@ -26,9 +26,7 @@ def load(stream, Loader=Loader):
           using the CLoader class instead of the default Loader, to achieve 
           best performance.
     """
-    if _c:
-        return _yaml.load(stream, Loader=Loader)
-    return _yaml.safe_load(stream)
+    return _yaml.load(stream, Loader=Loader) if _c else _yaml.safe_load(stream)
 
 
 YAMLError = _yaml.YAMLError

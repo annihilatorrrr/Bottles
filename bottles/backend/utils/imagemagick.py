@@ -25,11 +25,7 @@ class ImageMagickUtils:
 
     @staticmethod
     def __validate_path(path: str):
-        if os.path.exists(path):
-            return False
-        if os.path.isdir(path):
-            return False
-        return True
+        return False if os.path.exists(path) else not os.path.isdir(path)
 
     def list_assets(self):
         cmd = f"identify '{self.path}'"

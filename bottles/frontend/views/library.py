@@ -50,7 +50,7 @@ class LibraryView(Adw.Bin):
             self.main_flow.remove(self.main_flow.get_first_child())
 
         self.status_page.set_visible(len(entries) == 0)
-        self.scroll_window.set_visible(not len(entries) == 0)
+        self.scroll_window.set_visible(len(entries) != 0)
 
         for u, e in entries.items():
             entry = LibraryEntry(self, u, e)

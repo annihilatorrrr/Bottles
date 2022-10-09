@@ -34,7 +34,7 @@ class ThumbnailManager:
         #     return ThumbnailManager.__load_epic(config, uri)
         # elif uri.startswith("origin:"):
         #     return ThumbnailManager.__load_origin(config, uri)
-        logging.error("Unknown URI: " + uri)
+        logging.error(f"Unknown URI: {uri}")
         return None
     
     @staticmethod
@@ -44,7 +44,7 @@ class ThumbnailManager:
         path = os.path.join(bottle_path, 'grids', file_name)
 
         if not os.path.exists(path):
-            logging.error("Grid not found: " + path)
+            logging.error(f"Grid not found: {path}")
             return None
-            
+
         return path

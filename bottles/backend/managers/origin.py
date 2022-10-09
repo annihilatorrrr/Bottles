@@ -37,10 +37,7 @@ class OriginManager:
                 "drive_c/ProgramData/Origin/LocalContent")
         ]
 
-        for path in paths:
-            if os.path.exists(path):
-                return path
-        return None
+        return next((path for path in paths if os.path.exists(path)), None)
 
     @staticmethod
     def is_origin_supported(config: dict) -> bool:
@@ -54,5 +51,4 @@ class OriginManager:
         """
         Gets the games.
         """
-        games = []
-        return games
+        return []

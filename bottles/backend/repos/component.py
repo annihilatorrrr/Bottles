@@ -26,9 +26,7 @@ class ComponentRepo(Repo):
         if name in self.catalog:
             entry = self.catalog[name]
             category = entry["Category"]
-            subcategory = entry.get("Sub-category")
-
-            if subcategory:
+            if subcategory := entry.get("Sub-category"):
                 url = f"{self.url}/{category}/{subcategory}/{name}.yml"
             else:
                 url = f"{self.url}/{category}/{name}.yml"

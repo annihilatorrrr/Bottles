@@ -50,11 +50,7 @@ class ProcUtils:
 
     @staticmethod
     def get_procs():
-        procs = []
-        for pid in os.listdir('/proc'):
-            if pid.isdigit():
-                procs.append(Proc(pid))
-        return procs
+        return [Proc(pid) for pid in os.listdir('/proc') if pid.isdigit()]
 
     @staticmethod
     def get_by_cmdline(cmdline):

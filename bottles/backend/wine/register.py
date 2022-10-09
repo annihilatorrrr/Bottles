@@ -40,8 +40,7 @@ class WinRegister:
     def __get_header(self):
         """Return the header of the registry file."""
         with open(self.path, "r") as reg:
-            header = reg.readlines(2)
-            return header
+            return reg.readlines(2)
 
     @staticmethod
     def __parse_dict(path: str):

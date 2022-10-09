@@ -52,7 +52,7 @@ class VmtouchDialog(Adw.Window):
     def __idle_save(self, *_args):
         settings = {"vmtouch_cache_cwd": self.switch_cache_cwd.get_state()}
 
-        for setting in settings.keys():
+        for setting in settings:
             self.manager.update_config(
                 config=self.config,
                 key=setting,

@@ -46,7 +46,7 @@ class BackupManager:
         Config will only export the bottle configuration, full will export
         the full bottle in tar.gz format.
         """
-        if path in [None, ""]:
+        if path in {None, ""}:
             logging.error(_("No path specified"))
             return Result(status=False)
 
@@ -95,10 +95,7 @@ class BackupManager:
     @staticmethod
     def exclude_filter(tarinfo):
         """Filter which excludes some unwanted files from the backup."""
-        if "dosdevices" in tarinfo.name:
-            return None
-
-        return tarinfo
+        return None if "dosdevices" in tarinfo.name else tarinfo
 
     @staticmethod
     def import_backup(window, scope: str, path: str, manager: Manager) -> Result:
@@ -108,7 +105,7 @@ class BackupManager:
         Config will make a new bottle reproducing the configuration, full will
         import the full bottle from a tar.gz file.
         """
-        if path in [None, ""]:
+        if path in {None, ""}:
             logging.error(_("No path specified"))
             return Result(status=False)
 
@@ -216,7 +213,7 @@ class BackupManager:
                 ignore=shutil.ignore_patterns(".*"),
                 symlinks=False
             )
-        except (FileNotFoundError, PermissionError, OSError):
+        except OSError:
             logging.error(f"Failed duplicate bottle: {name}")
             return Result(status=False)
 

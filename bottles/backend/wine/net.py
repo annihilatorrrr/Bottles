@@ -11,28 +11,15 @@ class Net(WineProgram):
     command = "net"
 
     def start(self, name: str = None):
-        args = "start"
-
-        if name is not None:
-            args = f"start '{name}'"
-
+        args = f"start '{name}'" if name is not None else "start"
         return self.launch(args=args, communicate=True, action_name="start")
 
     def stop(self, name: str = None):
-        args = "stop"
-
-        if name is not None:
-            args = f"stop '{name}'"
-
+        args = f"stop '{name}'" if name is not None else "stop"
         return self.launch(args=args, communicate=True, action_name="stop")
 
     def use(self, name: str = None):
-        # this command has no documentation, not tested yet
-        args = "use"
-
-        if name is not None:
-            args = f"use '{name}'"
-
+        args = f"use '{name}'" if name is not None else "use"
         return self.launch(args=args, communicate=True, action_name="use")
 
     def list(self):

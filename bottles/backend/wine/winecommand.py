@@ -163,8 +163,8 @@ class WineCommand:
             if environment.get("DXVK_CONFIG_FILE", "") == "bottle_root":
                 environment["DXVK_CONFIG_FILE"] = os.path.join(bottle, "dxvk.conf")
 
-            for e in environment:
-                env.add(e, environment[e], override=True)
+            for e, value in environment.items():
+                env.add(e, value, override=True)
 
         # Language
         if config["Language"] != "sys":
@@ -172,19 +172,17 @@ class WineCommand:
 
         # Bottle DLL_Overrides
         if config["DLL_Overrides"]:
-            for dll in config.get("DLL_Overrides").items():
-                dll_overrides.append(f"{dll[0]}={dll[1]}")
+            dll_overrides.extend(
+                f"{dll[0]}={dll[1]}" for dll in config.get("DLL_Overrides").items()
+            )
 
         # Default DLL overrides
         if not return_steam_env:
-            dll_overrides.append("mshtml=d")
-            dll_overrides.append("winemenubuilder=''")
-
+            dll_overrides.extend(("mshtml=d", "winemenubuilder=''"))
         # Get Runtime libraries
         if (params.get("use_runtime") or params.get("use_eac_runtime") or params.get("use_be_runtime")) \
-                and not self.terminal and not return_steam_env:
-            _rb = RuntimeManager.get_runtime_env("bottles")
-            if _rb:
+                    and not self.terminal and not return_steam_env:
+            if _rb := RuntimeManager.get_runtime_env("bottles"):
                 _eac = RuntimeManager.get_eac()
                 _be = RuntimeManager.get_be()
 
@@ -215,23 +213,17 @@ class WineCommand:
                 "lib32/wine/i386-unix",
                 "lib64/wine/i386-unix"
             ]
-            gst_libs = [
-                "lib/gstreamer-1.0",
-                "lib32/gstreamer-1.0",
-                "lib64/gstreamer-1.0"
-            ]
         else:
             runner_libs = [
                 "lib/wine/i386-unix",
                 "lib32/wine/i386-unix",
                 "lib64/wine/i386-unix"
             ]
-            gst_libs = [
-                "lib/gstreamer-1.0",
-                "lib32/gstreamer-1.0",
-                "lib64/gstreamer-1.0"
-            ]
-            
+        gst_libs = [
+            "lib/gstreamer-1.0",
+            "lib32/gstreamer-1.0",
+            "lib64/gstreamer-1.0"
+        ]
         for lib in runner_libs:
             _path = os.path.join(runner_path, lib)
             if os.path.exists(_path):
@@ -263,7 +255,11 @@ class WineCommand:
             env.concat("VK_ICD_FILENAMES", _lf_icd)
 
         # Mangohud environment variables
-        if params["mangohud"] and not self.minimal and not (gamescope_available and params.get("gamescope")):
+        if (
+            params["mangohud"]
+            and not self.minimal
+            and (not gamescope_available or not params.get("gamescope"))
+        ):
             env.add("MANGOHUD", "1")
             env.add("MANGOHUD_DLSYM", "1")
 
@@ -307,9 +303,7 @@ class WineCommand:
 
         # Wine debug level
         if not return_steam_env:
-            debug_level = "fixme-all"
-            if params["fixme_logs"]:
-                debug_level = "+fixme-all"
+            debug_level = "+fixme-all" if params["fixme_logs"] else "fixme-all"
             env.add("WINEDEBUG", debug_level)
 
         # LatencyFleX
@@ -392,8 +386,8 @@ class WineCommand:
             return ""
 
         if "Proton" in runner \
-                and "lutris" not in runner \
-                and config.get("Environment", "") != "Steam":
+                    and "lutris" not in runner \
+                    and config.get("Environment", "") != "Steam":
             '''
             If the runner is Proton, set the pat to /dist or /files 
             based on check if files exists.

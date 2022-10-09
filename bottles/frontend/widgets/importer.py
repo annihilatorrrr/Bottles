@@ -48,7 +48,7 @@ class ImporterEntry(Adw.ActionRow):
         if prefix.get("Lock"):
             self.img_lock.set_visible(True)
 
-        self.label_manager.add_css_class("tag-%s" % prefix.get("Manager").lower())
+        self.label_manager.add_css_class(f'tag-{prefix.get("Manager").lower()}')
 
         # connect signals
         self.btn_browse.connect("clicked", self.browse_wineprefix)

@@ -85,9 +85,8 @@ class DLLComponent:
                     dll_name = dll.split('/')[-1].split('.')[0]
                     if overrides_only:
                         dll_in.append(dll_name)
-                    else:
-                        if self.__install_dll(config, path, dll, False):
-                            dll_in.append(dll_name)
+                    elif self.__install_dll(config, path, dll, False):
+                        dll_in.append(dll_name)
 
         for dll in dll_in:
             bundle["HKEY_CURRENT_USER\\Software\\Wine\\DllOverrides"].append({
@@ -122,13 +121,12 @@ class DLLComponent:
 
     @staticmethod
     def __get_sys_path(config, path: str):
-        if config["Arch"] == "win32":
-            if path in ["x32", "x86"]:
-                return "system32"
+        if config["Arch"] == "win32" and path in {"x32", "x86"}:
+            return "system32"
         if config["Arch"] == "win64":
-            if path in ["x64"] or "x86_64" in path:
+            if path in {"x64"} or "x86_64" in path:
                 return "system32"
-            if path in ["x32", "x86"]:
+            if path in {"x32", "x86"}:
                 return "syswow64"
         return None
 
@@ -139,11 +137,7 @@ class DLLComponent:
         source = os.path.join(self.base_path, path, dll)
         path = self.__get_sys_path(config, path)
 
-        if path is not None:
-            target = os.path.join(bottle, path, dll_name)
-        else:
-            target = None
-
+        target = os.path.join(bottle, path, dll_name) if path is not None else None
         print(f"{source} -> {target}")
 
         if target is not None:

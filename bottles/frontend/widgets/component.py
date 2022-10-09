@@ -137,7 +137,7 @@ class ComponentEntry(Adw.ActionRow):
 
         if not completed:
             percent = int(count * block_size * 100 / total_size)
-            self.label_task_status.set_text(f'{str(percent)}%')
+            self.label_task_status.set_text(f'{percent}%')
         else:
             percent = 100
 

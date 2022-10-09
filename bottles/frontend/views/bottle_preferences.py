@@ -313,19 +313,19 @@ class PreferencesView(Adw.PreferencesPage):
         self.str_list_languages.splice(0, self.str_list_languages.get_n_items())
         self.str_list_windows.splice(0, self.str_list_windows.get_n_items())
 
-        for index, dxvk in enumerate(self.manager.dxvk_available):
+        for dxvk in self.manager.dxvk_available:
             self.str_list_dxvk.append(dxvk)
 
-        for index, vkd3d in enumerate(self.manager.vkd3d_available):
+        for vkd3d in self.manager.vkd3d_available:
             self.str_list_vkd3d.append(vkd3d)
 
-        for index, runner in enumerate(self.manager.runners_available):
+        for runner in self.manager.runners_available:
             self.str_list_runner.append(runner)
 
-        for index, nvapi in enumerate(self.manager.nvapi_available):
+        for nvapi in self.manager.nvapi_available:
             self.str_list_nvapi.append(nvapi)
 
-        for index, latencyflex in enumerate(self.manager.latencyflex_available):
+        for latencyflex in self.manager.latencyflex_available:
             self.str_list_latencyflex.append(latencyflex)
 
         for lang in ManagerUtils.get_languages():
@@ -1113,7 +1113,7 @@ class PreferencesView(Adw.PreferencesPage):
 
     def __set_steam_rules(self):
         """Set the Steam Environment specific rules"""
-        status = False if self.config.get("Environment") == "Steam" else True
+        status = self.config.get("Environment") != "Steam"
 
         for w in [
             self.row_discrete,

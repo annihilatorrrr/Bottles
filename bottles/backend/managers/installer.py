@@ -64,12 +64,10 @@ class InstallerManager:
     @lru_cache
     def get_review(self, installer_name, parse: bool = True) -> str:
         """Return an installer review from the repository (as HTML)"""
-        review = self.__repo.get_review(installer_name)
-        if not review:
+        if review := self.__repo.get_review(installer_name):
+            return markdown.markdown(review) if parse else review
+        else:
             return "No review found for this installer."
-        if parse:
-            return markdown.markdown(review)
-        return review
 
     @lru_cache
     def get_installer(
@@ -86,14 +84,11 @@ class InstallerManager:
     @lru_cache
     def fetch_catalog(self) -> dict:
         """Fetch the installers catalog from the repository"""
-        catalog = {}
         index = self.__repo.catalog
         if not self.__utils_conn.check_connection():
             return {}
 
-        for installer in index.items():
-            catalog[installer[0]] = installer[1]
-
+        catalog = {installer[0]: installer[1] for installer in index.items()}
         catalog = dict(sorted(catalog.items()))
         return catalog
 
@@ -209,10 +204,7 @@ class InstallerManager:
 
                 if download:
                     if st["url"] != "local":
-                        if st.get("rename"):
-                            file = st.get("rename")
-                        else:
-                            file = st.get("file_name")
+                        file = st.get("rename") or st.get("file_name")
                         file_path = f"{Paths.temp}/{file}"
                     else:
                         file_path = self.__local_resources[st.get("file_name")]
@@ -275,8 +267,8 @@ class InstallerManager:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         ).communicate()
-        logging.info(f"Executing installer script…")
-        logging.info(f"Finished executing installer script.")
+        logging.info("Executing installer script…")
+        logging.info("Finished executing installer script.")
 
     @staticmethod
     def __step_update_config(config, step: dict):
@@ -302,65 +294,73 @@ class InstallerManager:
         _components_layers = []
         wineboot = WineBoot(_config)
 
-        if "dxvk" in parameters:
-            if parameters["dxvk"] != config["Parameters"]["dxvk"]:
+        if (
+            "dxvk" in parameters
+            and parameters["dxvk"] != config["Parameters"]["dxvk"]
+        ):
                 # region LAYER_COMP_INSTALL
-                if config["Environment"] == "Layered":
-                    if LayersStore.get_layer_by_name("dxvk"):
-                        return
-                    logging.info(f"Installing DXVK in a new layer.")
-                    layer = Layer().new("dxvk", self.__manager.get_latest_runner())
-                    layer.mount_bottle(config)
-                    _components_layers.append(layer)
-                    _config = layer.runtime_conf
-                    wineboot.init()
-                # endregion
-                self.__manager.install_dll_component(_config, "dxvk", remove=not parameters["dxvk"])
+            if config["Environment"] == "Layered":
+                if LayersStore.get_layer_by_name("dxvk"):
+                    return
+                logging.info("Installing DXVK in a new layer.")
+                layer = Layer().new("dxvk", self.__manager.get_latest_runner())
+                layer.mount_bottle(config)
+                _components_layers.append(layer)
+                _config = layer.runtime_conf
+                wineboot.init()
+            # endregion
+            self.__manager.install_dll_component(_config, "dxvk", remove=not parameters["dxvk"])
 
-        if "vkd3d" in parameters:
-            if parameters["vkd3d"] != config["Parameters"]["vkd3d"]:
+        if (
+            "vkd3d" in parameters
+            and parameters["vkd3d"] != config["Parameters"]["vkd3d"]
+        ):
                 # region LAYER_COMP_INSTALL
-                if config["Environment"] == "Layered":
-                    if LayersStore.get_layer_by_name("vkd3d"):
-                        return
-                    logging.info(f"Installing VKD3D in a new layer.")
-                    layer = Layer().new("vkd3d", self.__manager.get_latest_runner())
-                    layer.mount_bottle(config)
-                    _components_layers.append(layer)
-                    _config = layer.runtime_conf
-                    wineboot.init()
-                # endregion
-                self.__manager.install_dll_component(_config, "vkd3d", remove=not parameters["vkd3d"])
+            if config["Environment"] == "Layered":
+                if LayersStore.get_layer_by_name("vkd3d"):
+                    return
+                logging.info("Installing VKD3D in a new layer.")
+                layer = Layer().new("vkd3d", self.__manager.get_latest_runner())
+                layer.mount_bottle(config)
+                _components_layers.append(layer)
+                _config = layer.runtime_conf
+                wineboot.init()
+            # endregion
+            self.__manager.install_dll_component(_config, "vkd3d", remove=not parameters["vkd3d"])
 
-        if "dxvk_nvapi" in parameters:
-            if parameters["dxvk_nvapi"] != config["Parameters"]["dxvk_nvapi"]:
+        if (
+            "dxvk_nvapi" in parameters
+            and parameters["dxvk_nvapi"] != config["Parameters"]["dxvk_nvapi"]
+        ):
                 # region LAYER_COMP_INSTALL
-                if config["Environment"] == "Layered":
-                    if LayersStore.get_layer_by_name("dxvk_nvapi"):
-                        return
-                    logging.info(f"Installing DXVK NVAPI in a new layer.")
-                    layer = Layer().new("dxvk_nvapi", self.__manager.get_latest_runner())
-                    layer.mount_bottle(config)
-                    _components_layers.append(layer)
-                    _config = layer.runtime_conf
-                    wineboot.init()
-                # endregion
-                self.__manager.install_dll_component(_config, "nvapi", remove=not parameters["dxvk_nvapi"])
+            if config["Environment"] == "Layered":
+                if LayersStore.get_layer_by_name("dxvk_nvapi"):
+                    return
+                logging.info("Installing DXVK NVAPI in a new layer.")
+                layer = Layer().new("dxvk_nvapi", self.__manager.get_latest_runner())
+                layer.mount_bottle(config)
+                _components_layers.append(layer)
+                _config = layer.runtime_conf
+                wineboot.init()
+            # endregion
+            self.__manager.install_dll_component(_config, "nvapi", remove=not parameters["dxvk_nvapi"])
 
-        if "latencyflex" in parameters:
-            if parameters["latencyflex"] != config["Parameters"]["latencyflex"]:
+        if (
+            "latencyflex" in parameters
+            and parameters["latencyflex"] != config["Parameters"]["latencyflex"]
+        ):
                 # region LAYER_COMP_INSTALL
-                if config["Environment"] == "Layered":
-                    if LayersStore.get_layer_by_name("latencyflex"):
-                        return
-                    logging.info(f"Installing LatencyFlex in a new layer.")
-                    layer = Layer().new("latencyflex", self.__manager.get_latest_runner())
-                    layer.mount_bottle(config)
-                    _components_layers.append(layer)
-                    _config = layer.runtime_conf
-                    wineboot.init()
-                # endregion
-                self.__manager.install_dll_component(_config, "latencyflex", remove=not parameters["latencyflex"])
+            if config["Environment"] == "Layered":
+                if LayersStore.get_layer_by_name("latencyflex"):
+                    return
+                logging.info("Installing LatencyFlex in a new layer.")
+                layer = Layer().new("latencyflex", self.__manager.get_latest_runner())
+                layer.mount_bottle(config)
+                _components_layers.append(layer)
+                _config = layer.runtime_conf
+                wineboot.init()
+            # endregion
+            self.__manager.install_dll_component(_config, "latencyflex", remove=not parameters["latencyflex"])
 
         # sweep and save layers
         for c in _components_layers:
@@ -383,14 +383,14 @@ class InstallerManager:
         manifest = self.get_installer(installer[0])
         steps = {"total": 0, "sections": []}
         if manifest.get("Dependencies"):
-            i = int(len(manifest.get("Dependencies")))
+            i = len(manifest.get("Dependencies"))
             steps["sections"] += i * ["deps"]
             steps["total"] += i
         if manifest.get("Parameters"):
             steps["sections"].append("params")
             steps["total"] += 1
         if manifest.get("Steps"):
-            i = int(len(manifest.get("Steps")))
+            i = len(manifest.get("Steps"))
             steps["sections"] += i * ["steps"]
             steps["total"] += i
         if manifest.get("Executable"):
@@ -408,10 +408,7 @@ class InstallerManager:
         exe_msi_steps = [s for s in steps
                          if s.get("action", "") in ["install_exe", "install_msi"]
                          and s.get("url", "") == "local"]
-        if len(exe_msi_steps) == 0:
-            return []
-        files = [s.get("file_name", "") for s in exe_msi_steps]
-        return files
+        return [s.get("file_name", "") for s in exe_msi_steps] if exe_msi_steps else []
 
     def install(self, config: dict, installer: dict, step_fn: callable, is_final: bool = True,
                 local_resources: dict = None):
@@ -445,9 +442,10 @@ class InstallerManager:
                     return Result(False, data={"message": "Failed to install dependent installer(s)"})
 
         # ask for local resources
-        if local_resources:
-            if not self.__process_local_resources(local_resources, installer):
-                return Result(False, data={"message": "Local resources not found or invalid"})
+        if local_resources and not self.__process_local_resources(
+            local_resources, installer
+        ):
+            return Result(False, data={"message": "Local resources not found or invalid"})
 
         # install dependencies
         if dependencies:
@@ -477,9 +475,8 @@ class InstallerManager:
                 wineboot.update()
                 if not self.__perform_steps(self.__layer.runtime_conf, steps):
                     return Result(False, data={"message": "Installation failed, please check the logs."})
-            else:
-                if not self.__perform_steps(_config, steps):
-                    return Result(False, data={"message": "Installer is not well configured."})
+            elif not self.__perform_steps(_config, steps):
+                return Result(False, data={"message": "Installer is not well configured."})
 
         # execute checks
         if checks:

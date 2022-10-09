@@ -28,9 +28,7 @@ class Drives:
 
     def get_drive(self, letter: str):
         """Get a drive from the bottle"""
-        if letter in self.get_all():
-            return self.get_all().get(letter)
-        return None
+        return self.get_all().get(letter) if letter in self.get_all() else None
 
     def new_drive(self, letter: str, path: str):
         """Add a new drive to the bottle"""

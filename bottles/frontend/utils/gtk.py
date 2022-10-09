@@ -27,10 +27,9 @@ class GtkUtils:
             entry.add_css_class("error")
             return False
 
-        if extend is not None:
-            if extend(text):
-                entry.add_css_class("error")
-                return False
+        if extend is not None and extend(text):
+            entry.add_css_class("error")
+            return False
 
         entry.remove_css_class("error")
         return True

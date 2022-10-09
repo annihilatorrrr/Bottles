@@ -157,16 +157,14 @@ class VkBasaltDialog(Adw.Window):
                 self.spin_smaa_max_search_steps_diagonal.set_value(float(VkBasaltSettings.smaa_max_search_steps_diagonal))
             if VkBasaltSettings.smaa_corner_rounding != None:
                 self.spin_smaa_corner_rounding.set_value(float(VkBasaltSettings.smaa_corner_rounding))
-            if VkBasaltSettings.smaa_edge_detection != None:
-                if VkBasaltSettings.smaa_edge_detection == "color":
-                    self.toggle_color.set_active(True)
-                    self.smaa_edge_detection = "color"
-                else:
-                    self.smaa_edge_detection = "luma"
+            if (
+                VkBasaltSettings.smaa_edge_detection != None
+                and VkBasaltSettings.smaa_edge_detection == "color"
+            ):
+                self.toggle_color.set_active(True)
+                self.smaa_edge_detection = "color"
             else:
                 self.smaa_edge_detection = "luma"
-
-        # If configuration file doesn't exist, set everything to default
         else:
             self.switch_default.set_state(True)
             self.smaa_edge_detection = "luma"
@@ -290,63 +288,60 @@ class VkBasaltDialog(Adw.Window):
     def __import_clut(self, *args):
         def set_path(_dialog, response, _file_dialog):
             # Check if file has been opened from the dialog
-            if response == -3:
+            if response != -3:
+                return
+            def error_dialog(title, message):
+                dialog = Adw.MessageDialog.new(self.window, title, message)
+                dialog.add_response("cancel", "Close")
+                dialog.present()
 
-                def error_dialog(title, message):
-                    dialog = Adw.MessageDialog.new(self.window, title, message)
-                    dialog.add_response("cancel", "Close")
-                    dialog.present()
-
-                # Check if file exists, spawn error dialog otherwise
-                try:
-                    self.btn_lut_file_path = _file_dialog.get_file().get_path()
-                except AttributeError:
-                    logging.error("The given file does not exist. Please choose an appropriate file.")
-                    error_dialog(
-                        _("File not Found"),
-                        _("The given file does not exist. Please choose an appropriate file.")
-                        )
-                    return
+            # Check if file exists, spawn error dialog otherwise
+            try:
+                self.btn_lut_file_path = _file_dialog.get_file().get_path()
+            except AttributeError:
+                logging.error("The given file does not exist. Please choose an appropriate file.")
+                error_dialog(
+                    _("File not Found"),
+                    _("The given file does not exist. Please choose an appropriate file.")
+                    )
+                return
 
                 # Check if file type is png
-                if self.btn_lut_file_path.split(".")[-1] == "png":
+            if self.btn_lut_file_path.split(".")[-1] == "png":
 
-                    texture = Gdk.Texture.new_from_filename(self.btn_lut_file_path)
+                texture = Gdk.Texture.new_from_filename(self.btn_lut_file_path)
 
-                    # Get width and height size
-                    width = texture.get_width()
-                    height = texture.get_height()
+                # Get width and height size
+                width = texture.get_width()
+                height = texture.get_height()
 
-                    def set_lut_file_path():
-                        if self.action_clut.get_subtitle():
-                            self.btn_lut_file_path = self.action_clut.get_subtitle()
-                        else:
-                            self.btn_lut_file_path = False
+                def set_lut_file_path():
+                    self.btn_lut_file_path = self.action_clut.get_subtitle() or False
 
-                    # Check if there is a space in the path, spawn error dialog if so
-                    if " " in self.btn_lut_file_path:
-                        logging.error("Color Lookup Table path must not contain any spaces. Please rename the file to remove all spaces.")
-                        error_dialog(
-                            _("Spaces in File Name"),
-                            _("Color Lookup Table path must not contain any spaces. Please rename the file to remove all spaces.")
-                            )
-                        set_lut_file_path()
+                # Check if there is a space in the path, spawn error dialog if so
+                if " " in self.btn_lut_file_path:
+                    logging.error("Color Lookup Table path must not contain any spaces. Please rename the file to remove all spaces.")
+                    error_dialog(
+                        _("Spaces in File Name"),
+                        _("Color Lookup Table path must not contain any spaces. Please rename the file to remove all spaces.")
+                        )
+                    set_lut_file_path()
 
-                    # Check if width and height are different, spawn error dialog if so
-                    elif width != height:
-                        logging.error("Height and width of the image must be equal.")
-                        error_dialog(
-                            _("Invalid Image Dimension"),
-                            _("Height and width of the image must be equal.")
-                            )
-                        set_lut_file_path()
+                # Check if width and height are different, spawn error dialog if so
+                elif width != height:
+                    logging.error("Height and width of the image must be equal.")
+                    error_dialog(
+                        _("Invalid Image Dimension"),
+                        _("Height and width of the image must be equal.")
+                        )
+                    set_lut_file_path()
 
-                    # Show file path and reset button
-                    else:
-                        self.action_clut.set_subtitle(self.btn_lut_file_path)
-                        self.btn_lut_reset.show()
+                # Show file path and reset button
+                else:
+                    self.action_clut.set_subtitle(self.btn_lut_file_path)
+                    self.btn_lut_reset.show()
 
-                    self.__check_state()
+                self.__check_state()
 
         FileChooser(
             parent=self.window,

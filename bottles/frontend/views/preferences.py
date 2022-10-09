@@ -76,8 +76,7 @@ class PreferencesWindow(Adw.PreferencesWindow):
         if "FLATPAK_ID" in os.environ:
             self.remove(self.pref_core)
 
-        bottles_path = self.data.get("custom_bottles_path")
-        if bottles_path:
+        if bottles_path := self.data.get("custom_bottles_path"):
             self.action_bottles_path.set_subtitle(bottles_path)
             self.btn_bottles_path_reset.set_visible(True)
 
@@ -116,7 +115,7 @@ class PreferencesWindow(Adw.PreferencesWindow):
             self.action_steam_proton.set_tooltip_text(
                 _("Steam was not found or Bottles does not have enough permissions."))
             self.btn_steam_proton_doc.set_visible(True)
-        
+
 
         if not self.style_manager.get_system_supports_color_schemes():
             self.row_theme.set_visible(True)
@@ -190,8 +189,7 @@ class PreferencesWindow(Adw.PreferencesWindow):
 
     def populate_runners_list(self):
         for w in self.__registry:
-            parent = w.get_parent()
-            if parent:
+            if parent := w.get_parent():
                 parent.remove(w)
 
         exp_soda = ComponentExpander("Soda", _("Based on Valve's Wine, includes staging and Proton patches."))

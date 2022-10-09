@@ -32,9 +32,8 @@ class RuntimeManager:
             "steam": RuntimeManager.__get_steam_runtime()
         }
 
-        if _filter == "steam":
-            if len(runtimes.get("steam", {})) == 0:
-                return False
+        if _filter == "steam" and len(runtimes.get("steam", {})) == 0:
+            return False
 
         return runtimes.get(_filter, False)
 
@@ -43,26 +42,22 @@ class RuntimeManager:
         runtime = RuntimeManager.get_runtimes(_filter)
         env = ""
 
-        if runtime:
-            for p in runtime:
-                if "EasyAntiCheatRuntime" in p or "BattlEyeRuntime" in p:
-                    continue
-                env += f":{p}"
-                
-        else:
+        if not runtime:
             return False
 
-        ld = os.environ.get('LD_LIBRARY_PATH')
-        if ld:
+        for p in runtime:
+            if "EasyAntiCheatRuntime" in p or "BattlEyeRuntime" in p:
+                continue
+            env += f":{p}"
+
+        if ld := os.environ.get('LD_LIBRARY_PATH'):
             env += f":{ld}"
 
         return env
 
     @staticmethod
     def get_eac():
-        runtime = RuntimeManager.get_runtimes("bottles")
-
-        if runtime:
+        if runtime := RuntimeManager.get_runtimes("bottles"):
             for p in runtime:
                 if "EasyAntiCheatRuntime" in p:
                     return p
@@ -71,9 +66,7 @@ class RuntimeManager:
 
     @staticmethod
     def get_be():
-        runtime = RuntimeManager.get_runtimes("bottles")
-
-        if runtime:
+        if runtime := RuntimeManager.get_runtimes("bottles"):
             for p in runtime:
                 if "BattlEyeRuntime" in p:
                     return p

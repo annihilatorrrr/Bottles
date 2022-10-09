@@ -114,7 +114,6 @@ def sort_by_version(_list: list, extra_check: str = "async"):
 def get_mime(path: str):
     """Get the mime type of file."""
     with contextlib.suppress(FileNotFoundError):
-        res = subprocess.check_output(["file", "--mime-type", path])
-        if res:
+        if res := subprocess.check_output(["file", "--mime-type", path]):
             return res.decode('utf-8').split(':')[1].strip()
     return None

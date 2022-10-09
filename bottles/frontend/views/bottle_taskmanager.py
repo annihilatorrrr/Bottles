@@ -53,21 +53,17 @@ class TaskManagerView(Gtk.ScrolledWindow):
         self.treeview_processes.set_model(self.liststore_processes)
 
         cell_renderer = Gtk.CellRendererText()
-        i = 0
-
-        for column in [
+        for i, column in enumerate([
             "PID",
             "Name",
             "Threads",
             # "Parent"
-        ]:
+        ]):
             '''
             For each column, add it to the treeview_processes
             '''
             column = Gtk.TreeViewColumn(column, cell_renderer, text=i)
             self.treeview_processes.append_column(column)
-            i += 1
-
         self.update()
 
     def set_config(self, config):

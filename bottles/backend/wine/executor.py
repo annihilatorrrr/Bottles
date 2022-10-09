@@ -64,18 +64,18 @@ class WineExecutor:
 
         env_dll_overrides = []
         if override_dxvk is not None \
-            and not override_dxvk \
-            and self.config["Parameters"]["dxvk"]:
+                and not override_dxvk \
+                and self.config["Parameters"]["dxvk"]:
                 env_dll_overrides.append("d3d9,d3d11,d3d10core,dxgi=b")
 
         if override_vkd3d is not None \
-            and not override_vkd3d \
-            and self.config["Parameters"]["vkd3d"]:
+                and not override_vkd3d \
+                and self.config["Parameters"]["vkd3d"]:
                 env_dll_overrides.append("d3d12=b")
 
         if override_nvapi is not None \
-            and not override_nvapi \
-            and self.config["Parameters"]["dxvk_nvapi"]:
+                and not override_nvapi \
+                and self.config["Parameters"]["dxvk_nvapi"]:
                 env_dll_overrides.append("nvapi,nvapi64=b")
 
         if override_fsr is not None and override_fsr:
@@ -94,7 +94,7 @@ class WineExecutor:
     def run_program(cls,config: dict, program: dict, terminal: bool=False):
         if program is None:
             logging.warning("The program entry is not well formatted.")
-            
+
         dxvk = config["Parameters"]["dxvk"]
         vkd3d = config["Parameters"]["vkd3d"]
         nvapi = config["Parameters"]["dxvk_nvapi"]
@@ -132,7 +132,7 @@ class WineExecutor:
 
     def __get_cwd(self, cwd: str) -> Union[str, None]:
         winepath = WinePath(self.config)
-        if cwd in [None, ""]:
+        if cwd in {None, ""}:
             path = self.exec_path
             if winepath.is_windows(self.exec_path):
                 path = "\\".join(path.split("\\")[:-1])
@@ -162,12 +162,9 @@ class WineExecutor:
             return False
 
     def __move_file(self, exec_path, move_upd_fn):
-        new_path = ManagerUtils.move_file_to_bottle(
-            file_path=exec_path,
-            config=self.config,
-            fn_update=move_upd_fn
-        )
-        if new_path:
+        if new_path := ManagerUtils.move_file_to_bottle(
+            file_path=exec_path, config=self.config, fn_update=move_upd_fn
+        ):
             exec_path = new_path
 
         self.__validate_path(exec_path)
@@ -188,7 +185,7 @@ class WineExecutor:
         if _exec.endswith(".dll"):
             return "dll"
 
-        logging.warning(f"Not a common executable type, trying to launch it anyway.")
+        logging.warning("Not a common executable type, trying to launch it anyway.")
         return "unsupported"
 
     def run_cli(self):
@@ -357,7 +354,7 @@ class WineExecutor:
         if not self.monitoring:
             return
 
-        logging.info("Starting {} monitors".format(len(self.monitoring)))
+        logging.info(f"Starting {len(self.monitoring)} monitors")
 
         winedbg = WineDbg(self.config, silent=True)
         for m in self.monitoring:

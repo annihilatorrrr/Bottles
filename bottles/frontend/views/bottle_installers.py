@@ -73,9 +73,7 @@ class InstallersView(Adw.Bin):
     @staticmethod
     def __filter_installers(row, terms=None):
         text = row.get_title().lower() + row.get_subtitle().lower()
-        if terms.lower() in text:
-            return True
-        return False
+        return terms.lower() in text
 
     def empty_list(self):
         for r in self.__registry:
@@ -127,9 +125,6 @@ class InstallersView(Adw.Bin):
                 GLib.idle_add(new_installer, installer)
                 i += 1
 
-            if i == 0:
-                return Result(False)  # there are no arch-compatible installers
-
-            return Result(True)
+            return Result(False) if i == 0 else Result(True)
 
         RunAsync(process_installers, callback)

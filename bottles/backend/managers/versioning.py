@@ -148,9 +148,8 @@ class VersioningManager:
         states = {}
 
         try:
-            states_file = open('%s/states/states.yml' % bottle_path)
-            states_file_yaml = yaml.load(states_file)
-            states_file.close()
+            with open(f'{bottle_path}/states/states.yml') as states_file:
+                states_file_yaml = yaml.load(states_file)
             states = states_file_yaml.get("States")
             logging.info(f"Found [{len(states)}] states for bottle: [{config['Name']}]")
         except (FileNotFoundError, yaml.YAMLError):
@@ -173,9 +172,10 @@ class VersioningManager:
             GLib.idle_add(
                 self.__operation_manager.new_task,
                 task_id,
-                _("Restoring state {} …".format(state_id)),
-                False
+                _(f"Restoring state {state_id} …"),
+                False,
             )
+
             try:
                 repo.restore_state(state_id, ignore=patterns)
             except FVSStateNotFound:
@@ -200,7 +200,7 @@ class VersioningManager:
         bottle_index = self.get_index(config)
         state_index = self.get_state_files(config, state_id)
 
-        search_sources = list(range(int(state_id) + 1))
+        search_sources = list(range(state_id + 1))
         search_sources.reverse()
 
         # check for removed and changed files
@@ -215,31 +215,33 @@ class VersioningManager:
         logging.info(f"[{len(edit_files)}] files to replace.")
 
         # check for new files
-        add_files = []
-        for file in state_index.get("Files"):
-            if file["file"] not in [file["file"] for file in bottle_index.get("Files")]:
-                add_files.append(file)
+        add_files = [
+            file
+            for file in state_index.get("Files")
+            if file["file"]
+            not in [file["file"] for file in bottle_index.get("Files")]
+        ]
+
         logging.info(f"[{len(add_files)}] files to add.")
 
         # perform file updates
         for file in remove_files:
-            os.remove("%s/drive_c/%s" % (bottle_path, file["file"]))
+            os.remove(f'{bottle_path}/drive_c/{file["file"]}')
 
         for file in add_files:
-            for i in search_sources:
-                source = "%s/states/%s/drive_c/%s" % (bottle_path, str(state_id), file["file"])
-                target = "%s/drive_c/%s" % (bottle_path, file["file"])
+            for _ in search_sources:
+                source = f'{bottle_path}/states/{state_id}/drive_c/{file["file"]}'
+                target = f'{bottle_path}/drive_c/{file["file"]}'
                 shutil.copy2(source, target)
 
         for file in edit_files:
             for i in search_sources:
-                source = "%s/states/%s/drive_c/%s" % (
-                    bottle_path, str(i), file["file"])
+                source = f'{bottle_path}/states/{str(i)}/drive_c/{file["file"]}'
                 if os.path.isfile(source):
                     checksum = FileUtils().get_checksum(source)
                     if file["checksum"] == checksum:
                         break
-                target = "%s/drive_c/%s" % (bottle_path, file["file"])
+                target = f'{bottle_path}/drive_c/{file["file"]}'
                 shutil.copy2(source, target)
 
         # update State in bottle config
@@ -267,12 +269,11 @@ class VersioningManager:
         to return the content as plain text.
         """
         try:
-            file = open('%s/states/%s/files.yml' % (ManagerUtils.get_bottle_path(config), state_id))
-            files = file.read() if plain else yaml.load(file.read())
-            file.close()
+            with open(f'{ManagerUtils.get_bottle_path(config)}/states/{state_id}/files.yml') as file:
+                files = file.read() if plain else yaml.load(file.read())
             return files
         except (OSError, IOError, yaml.YAMLError):
-            logging.error(f"Could not read the state files file.")
+            logging.error("Could not read the state files file.")
             return {}
 
     @staticmethod
@@ -283,7 +284,7 @@ class VersioningManager:
             "Update_Date": str(datetime.now()),
             "Files": []
         }
-        for file in glob("%s/drive_c/**" % bottle_path, recursive=True):
+        for file in glob(f"{bottle_path}/drive_c/**", recursive=True):
             if not os.path.isfile(file):
                 continue
 

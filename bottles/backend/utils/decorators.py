@@ -48,7 +48,4 @@ def cache(_func=None, *, seconds: int = 600, maxsize: int = 128, typed: bool = F
         return wrapped_f
 
     # To allow decorator to be used without arguments
-    if _func is None:
-        return wrapper_cache
-    else:
-        return wrapper_cache(_func)
+    return wrapper_cache if _func is None else wrapper_cache(_func)

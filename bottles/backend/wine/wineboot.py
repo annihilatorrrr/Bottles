@@ -21,14 +21,14 @@ class WineBoot(WineProgram):
             3: "-u",
             4: "-i"
         }
-        envs = {"WINEDEBUG": "-all", "DISPLAY": ":3.0", "WINEDLLOVERRIDES": "winemenubuilder=d"}
-
         if status == 0 and not WineServer(self.config).is_alive():
             logging.info("There is no running wineserver.")
             return
 
         if status in states:
             args = f"{states[status]} /nogui"
+            envs = {"WINEDEBUG": "-all", "DISPLAY": ":3.0", "WINEDLLOVERRIDES": "winemenubuilder=d"}
+
             self.launch(
                 args=args,
                 environment=envs,

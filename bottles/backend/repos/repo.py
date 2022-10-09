@@ -32,7 +32,7 @@ class Repo:
         self.catalog = self.__get_catalog(index, offline)
 
     def __get_catalog(self, index: str, offline: bool = False):
-        if index in ["", None] or offline:
+        if index in {"", None} or offline:
             return {}
 
         try:
@@ -48,9 +48,7 @@ class Repo:
         try:
             with urllib.request.urlopen(url) as u:
                 res = u.read()
-                if plain:
-                    return res.decode("utf-8")
-                return yaml.load(res)
+                return res.decode("utf-8") if plain else yaml.load(res)
         except (urllib.error.HTTPError, urllib.error.URLError, RemoteDisconnected, yaml.YAMLError):
             logging.error(f"Cannot fetch {self.name} manifest.")
             return

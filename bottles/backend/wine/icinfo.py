@@ -28,9 +28,7 @@ class Icinfo(WineProgram):
             k, v = r.split(':')
             if r.startswith('vidc.'):
                 _latest = k
-                _res[k] = {}
-                _res[k]['name'] = k
-                _res[k]['description'] = v
+                _res[k] = {'name': k, 'description': v}
             else:
                 _res[_latest][k] = v
 

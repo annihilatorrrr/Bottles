@@ -70,7 +70,7 @@ class HealthChecker:
             "MemAvailable": "n/a"
         }
         self.get_ram_data()
-        if not "FLATPAK_ID" in os.environ:
+        if "FLATPAK_ID" not in os.environ:
             self.cabextract = self.check_cabextract()
             self.p7zip = self.check_p7zip()
             self.patool = self.check_patool()
@@ -97,43 +97,32 @@ class HealthChecker:
         return GPUUtils().get_gpu()
 
     def check_x11(self):
-        port = DisplayUtils.get_x_display()
-        if port:
+        if port := DisplayUtils.get_x_display():
             self.x11_port = port
             return True
         return False
 
     @staticmethod
     def check_wayland():
-        if "WAYLAND_DISPLAY" in os.environ:
-            return True
-        return False
+        return "WAYLAND_DISPLAY" in os.environ
 
     def check_xwayland(self):
-        if self.x11 and self.wayland:
-            return True
-        return False
+        return bool(self.x11 and self.wayland)
 
     @staticmethod
     def check_cabextract():
         res = shutil.which("cabextract")
-        if res is None:
-            return False
-        return True
+        return res is not None
 
     @staticmethod
     def check_p7zip():
         res = shutil.which("7z")
-        if res is None:
-            return False
-        return True
+        return res is not None
 
     @staticmethod
     def check_patool():
         res = shutil.which("patool")
-        if res is None:
-            return False
-        return True
+        return res is not None
 
     @staticmethod
     def check_icoextract():
@@ -170,16 +159,12 @@ class HealthChecker:
     @staticmethod
     def check_xdpyinfo():
         res = shutil.which("xdpyinfo")
-        if res is None:
-            return False
-        return True
+        return res is not None
 
     @staticmethod
     def check_ImageMagick():
         res = shutil.which("identify")
-        if res is None:
-            return False
-        return True
+        return res is not None
 
     @staticmethod
     def check_FVS():
@@ -289,7 +274,7 @@ class HealthChecker:
             "Bottles_envs": self.bottles_envs
         }
 
-        if not "FLATPAK_ID" in os.environ:
+        if "FLATPAK_ID" not in os.environ:
             results["Tools and Libraries"] = {
                 "cabextract": self.cabextract,
                 "p7zip": self.p7zip,

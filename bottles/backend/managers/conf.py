@@ -36,7 +36,7 @@ class ConfigManager(object):
             elif self.config_type == 'json':
                 with open(self.config_file, 'r') as f:
                     res = json.load(f)
-            elif self.config_type == 'yaml' or self.config_type == 'yml' :
+            elif self.config_type in ['yaml', 'yml']:
                 with open(self.config_file, 'r') as f:
                     res = yaml.load(f)
             else:
@@ -48,7 +48,7 @@ class ConfigManager(object):
                 res = config._sections
             elif self.config_type == 'json':
                 res = json.loads(self.config_string)
-            elif self.config_type == 'yaml' or self.config_type == 'yml':
+            elif self.config_type in ['yaml', 'yml']:
                 res = yaml.load(self.config_string)
             else:
                 raise ValueError('Invalid configuration type')
@@ -82,10 +82,11 @@ class ConfigManager(object):
             config.write(f)
 
     def write_dict(self, config_file: str=None):
-        if self.config_file is None and config_file is None:
-            raise ValueError('No config path specified')
-        elif self.config_file is None and config_file is not None:
-            self.config_file = config_file
+        if self.config_file is None:
+            if config_file is None:
+                raise ValueError('No config path specified')
+            else:
+                self.config_file = config_file
 
         """Writes the configuration to the file"""
         if self.config_type == 'ini':
@@ -102,11 +103,11 @@ class ConfigManager(object):
         for section in changes:
             if section in self.config_dict:
                 for key, value in changes[section].items():
-                    if isinstance(value, dict):
-                        if key in self.config_dict[section]:
-                            self.config_dict[section][key].update(value)
-                        else:
-                            self.config_dict[section][key] = value
+                    if (
+                        isinstance(value, dict)
+                        and key in self.config_dict[section]
+                    ):
+                        self.config_dict[section][key].update(value)
                     else:
                         self.config_dict[section][key] = value
             else:

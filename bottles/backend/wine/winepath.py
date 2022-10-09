@@ -33,10 +33,7 @@ class WinePath(WineProgram):
         if native:
             bottle_path = ManagerUtils.get_bottle_path(self.config)
             path = path.replace("\\", "/")
-            path = path.replace(
-                path[0:2],
-                f"{bottle_path}/dosdevices/{path[0:2].lower()}"
-            )
+            path = path.replace(path[:2], f"{bottle_path}/dosdevices/{path[:2].lower()}")
             return self.__clean_path(path)
         args = f"--unix '{path}'"
         res = self.launch(args=args, communicate=True, action_name="--unix")
@@ -47,13 +44,13 @@ class WinePath(WineProgram):
         if native:
             bottle_path = ManagerUtils.get_bottle_path(self.config)
             if "/drive_" in path:
-                drive = re.search(r"drive_([a-z])/", path.lower()).group(1)
+                drive = re.search(r"drive_([a-z])/", path.lower())[1]
                 path = path.replace(
                     f"{bottle_path}/drive_{drive.lower()}",
                     f"{drive.upper()}:"
                 )
             elif "/dosdevices" in path:
-                drive = re.search(r"dosdevices/([a-z]):", path.lower()).group(1)
+                drive = re.search(r"dosdevices/([a-z]):", path.lower())[1]
                 path = path.replace(
                     f"{bottle_path}/dosdevices/{drive.lower()}",
                     f"{drive.upper()}:"

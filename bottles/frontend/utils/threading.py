@@ -48,7 +48,7 @@ class RunAsync(threading.Thread):
 
         self.task_func = task_func
 
-        self.callback = callback if callback else lambda r, e: None
+        self.callback = callback or (lambda r, e: None)
         self.daemon = kwargs.pop("daemon", True)
 
         self.start()
@@ -70,6 +70,6 @@ class RunAsync(threading.Thread):
             traceback.print_tb(trace)
             traceback_info = '\n'.join(traceback.format_tb(trace))
 
-            logging.write_log([str(exception), traceback_info])
+            logging.write_log([str(error), traceback_info])
         self.source_id = GLib.idle_add(self.callback, result, error)
         return self.source_id

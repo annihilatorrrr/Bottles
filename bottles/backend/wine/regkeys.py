@@ -58,7 +58,25 @@ class RegKeys:
             else:
                 self.reg.remove(d, _val)
 
-        if version not in ["win98", "win95"]:
+        if version in {"win98", "win95"}:
+            bundle = {
+                "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion": [
+                    {
+                        "value": "ProductName",
+                        "data": win_versions.get(version)["ProductName"]
+                    },
+                    {
+                        "value": "SubVersionNumber",
+                        "data": win_versions.get(version)["SubVersionNumber"]
+                    },
+                    {
+                        "value": "VersionNumber",
+                        "data": win_versions.get(version)["VersionNumber"]
+                    }
+                ]
+            }
+
+        else:
             bundle = {
                 "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion": [
                     {
@@ -100,24 +118,6 @@ class RegKeys:
                     }
                 ]
             }
-        else:
-            bundle = {
-                "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion": [
-                    {
-                        "value": "ProductName",
-                        "data": win_versions.get(version)["ProductName"]
-                    },
-                    {
-                        "value": "SubVersionNumber",
-                        "data": win_versions.get(version)["SubVersionNumber"]
-                    },
-                    {
-                        "value": "VersionNumber",
-                        "data": win_versions.get(version)["VersionNumber"]
-                    }
-                ]
-            }
-
         if self.config.get("Arch") == "win64":
             bundle["HKEY_LOCAL_MACHINE\\Software\\Wow6432Node\\Microsoft\\Windows NT\\CurrentVersion"] = [
                 {
@@ -244,15 +244,15 @@ class RegKeys:
         """
         Set what backend to use for wined3d.
         """
-        if value not in ["gl", "gdi", "vulkan"]:
+        if value in {"gl", "gdi", "vulkan"}:
+            self.reg.add(
+                key="HKEY_CURRENT_USER\\Software\\Wine\\Direct3D",
+                value="renderer",
+                data=value,
+                key_type="REG_SZ"
+            )
+        else:
             raise ValueError(f"{value} is not a valid renderer (gl, gdi, vulkan)")
-
-        self.reg.add(
-            key="HKEY_CURRENT_USER\\Software\\Wine\\Direct3D",
-            value="renderer",
-            data=value,
-            key_type="REG_SZ"
-        )
 
     def set_dpi(self, value: int):
         """

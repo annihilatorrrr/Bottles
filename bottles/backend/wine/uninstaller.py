@@ -19,11 +19,7 @@ class Uninstaller(WineProgram):
         return self.launch(args=args, communicate=True, action_name="get_uuid")
 
     def from_uuid(self, uuid: str = None):
-        args = ""
-
-        if uuid not in [None, ""]:
-            args = f"--remove {uuid}"
-
+        args = f"--remove {uuid}" if uuid not in [None, ""] else ""
         return self.launch(args=args, action_name="from_uuid")
 
     def from_name(self, name: str):

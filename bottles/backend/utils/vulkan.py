@@ -65,11 +65,7 @@ class VulkanUtils:
             "amd",
             "intel"
         ]
-        icd = []
-
-        if vendor in vendors:
-            icd = self.loaders[vendor]
-
+        icd = self.loaders[vendor] if vendor in vendors else []
         if as_string:
             icd = ":".join(icd)
 
@@ -84,11 +80,13 @@ class VulkanUtils:
         if shutil.which("vulkaninfo") is None:
             return "vulkaninfo tool not found"
 
-        res = subprocess.Popen(
-            "vulkaninfo",
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=True
-        ).communicate()[0].decode("utf-8")
-
-        return res
+        return (
+            subprocess.Popen(
+                "vulkaninfo",
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                shell=True,
+            )
+            .communicate()[0]
+            .decode("utf-8")
+        )

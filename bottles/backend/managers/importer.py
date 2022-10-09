@@ -51,9 +51,7 @@ class ImportManager:
         is_wine = len(wine_standard)
         is_lutris = len(lutris_results)
         is_playonlinux = len(playonlinux_results)
-        i = 1
-
-        for wineprefix in results:
+        for i, wineprefix in enumerate(results, start=1):
             wineprefix_name = wineprefix.split("/")[-2]
 
             # identify manager by index
@@ -76,8 +74,6 @@ class ImportManager:
                         "Path": wineprefix,
                         "Lock": wineprefix_lock
                     })
-            i += 1
-
         logging.info(f"Found {len(importer_wineprefixes)} wine prefixes…")
 
         return Result(
@@ -97,7 +93,7 @@ class ImportManager:
 
         try:
             os.makedirs(bottle_complete_path, exist_ok=False)
-        except (FileExistsError, OSError):
+        except OSError:
             logging.error(f"Error creating bottle directory for {wineprefix['Name']}")
             return Result(False)
 

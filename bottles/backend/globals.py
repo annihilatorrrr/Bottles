@@ -51,10 +51,7 @@ def VkBasaltPath():
             "/usr/local",
             "/usr/share/vkBasalt",
     ]
-    for path in vkbasalt_paths:
-        if os.path.exists(path):
-            return True
-    return False
+    return any(os.path.exists(path) for path in vkbasalt_paths)
 
 @lru_cache
 class Paths:

@@ -69,9 +69,7 @@ class DependenciesView(Adw.Bin):
     @staticmethod
     def __filter_dependencies(row, terms=None):
         text = row.get_title().lower() + row.get_subtitle().lower()
-        if terms.lower() in text:
-            return True
-        return False
+        return terms.lower() in text
 
     def empty_list(self):
         for r in self.__registry:

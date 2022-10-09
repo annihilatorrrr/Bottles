@@ -69,12 +69,9 @@ class DependencyManager:
         if not self.__utils_conn.check_connection():
             return {}
 
-        catalog = {}
         index = self.__repo.catalog
 
-        for dependency in index.items():
-            catalog[dependency[0]] = dependency[1]
-
+        catalog = {dependency[0]: dependency[1] for dependency in index.items()}
         catalog = dict(sorted(catalog.items()))
         return catalog
 
@@ -106,10 +103,10 @@ class DependencyManager:
             self.__operation_manager.new_task, task_id, dependency[0], False
         )
 
-        logging.info("Installing dependency [%s] in bottle [%s]." % (
-            dependency[0],
-            config['Name']
-        ), )
+        logging.info(
+            f"Installing dependency [{dependency[0]}] in bottle [{config['Name']}]."
+        )
+
         manifest = self.get_dependency(dependency[0])
         if not manifest:
             '''
@@ -152,7 +149,7 @@ class DependencyManager:
                 uninstaller = False
 
         if dependency[0] not in config.get("Installed_Dependencies") \
-                or reinstall:
+                    or reinstall:
             '''
             If the dependency is not already listed in the installed
             dependencies list of the bottle, add it.
@@ -161,7 +158,7 @@ class DependencyManager:
 
             if config.get("Installed_Dependencies"):
                 dependencies = config["Installed_Dependencies"] + \
-                               [dependency[0]]
+                                   [dependency[0]]
 
             self.__manager.update_config(
                 config=config,
@@ -190,14 +187,10 @@ class DependencyManager:
 
         # Hide installation button and show remove button
         logging.info(f"Dependency installed: {dependency[0]} in {config['Name']}", jn=True)
-        if not uninstaller:
-            return Result(
-                status=True,
-                data={"uninstaller": False}
-            )
-        return Result(
-            status=True,
-            data={"uninstaller": True}
+        return (
+            Result(status=True, data={"uninstaller": True})
+            if uninstaller
+            else Result(status=True, data={"uninstaller": False})
         )
 
     def __perform_steps(
@@ -216,13 +209,16 @@ class DependencyManager:
         if step["action"] == "delete_dlls":
             self.__step_delete_dlls(config, step)
 
-        if step["action"] == "download_archive":
-            if not self.__step_download_archive(step):
-                return Result(status=False)
+        if step[
+            "action"
+        ] == "download_archive" and not self.__step_download_archive(step):
+            return Result(status=False)
 
-        if step["action"] in ["install_exe", "install_msi"]:
-            if not self.__step_install_exe_msi(config=config, step=step):
-                return Result(status=False)
+        if step["action"] in [
+            "install_exe",
+            "install_msi",
+        ] and not self.__step_install_exe_msi(config=config, step=step):
+            return Result(status=False)
 
         if step["action"] == "uninstall":
             self.__step_uninstall(config=config, file_name=step["file_name"])
@@ -315,11 +311,10 @@ class DependencyManager:
                 dest = f"{bottle}/drive_c/windows/syswow64/"
             dest = _dest.replace("win32", dest)
         elif dest.startswith("win64"):
-            if config.get("Arch") == "win64":
-                dest = f"{bottle}/drive_c/windows/system32/"
-                dest = _dest.replace("win64", dest)
-            else:
+            if config.get("Arch") != "win64":
                 return True
+            dest = f"{bottle}/drive_c/windows/system32/"
+            dest = _dest.replace("win64", dest)
         else:
             logging.error("Destination path not supported!")
             return False
@@ -398,19 +393,13 @@ class DependencyManager:
             return False
 
         if validate_url(step["url"]):
-            download = self.__manager.component_manager.download(
+            if download := self.__manager.component_manager.download(
                 download_url=step.get("url"),
                 file=step.get("file_name"),
                 rename=step.get("rename"),
-                checksum=step.get("file_checksum")
-            )
-
-            if download:
-                if step.get("rename"):
-                    file = step.get("rename")
-                else:
-                    file = step.get("file_name")
-
+                checksum=step.get("file_checksum"),
+            ):
+                file = step.get("rename") or step.get("file_name")
                 if not CabExtract().run(
                         path=os.path.join(Paths.temp, file),
                         name=file,
@@ -475,41 +464,34 @@ class DependencyManager:
                 os.path.join(dest, rename)
             )
 
-        if not res:
-            return False
-        return True
+        return bool(res)
 
     def __step_archive_extract(self, step: dict):
         """Download and extract an archive to the temp folder."""
-        download = self.__manager.component_manager.download(
-            download_url=step.get("url"),
-            file=step.get("file_name"),
-            rename=step.get("rename"),
-            checksum=step.get("file_checksum")
-        )
+        if not (
+            download := self.__manager.component_manager.download(
+                download_url=step.get("url"),
+                file=step.get("file_name"),
+                rename=step.get("rename"),
+                checksum=step.get("file_checksum"),
+            )
+        ):
+            return False
+        file = step.get("rename") or step.get("file_name")
+        archive_path = os.path.join(Paths.temp, os.path.splitext(file)[0])
 
-        if download:
-            if step.get("rename"):
-                file = step.get("rename")
-            else:
-                file = step.get("file_name")
+        if os.path.exists(archive_path):
+            shutil.rmtree(archive_path)
 
-            archive_path = os.path.join(Paths.temp, os.path.splitext(file)[0])
-
-            if os.path.exists(archive_path):
-                shutil.rmtree(archive_path)
-
-            os.makedirs(archive_path)
-            try:
-                patoolib.extract_archive(
-                    os.path.join(Paths.temp, file),
-                    outdir=archive_path
-                )
-            except:
-                return False
-            return True
-
-        return False
+        os.makedirs(archive_path)
+        try:
+            patoolib.extract_archive(
+                os.path.join(Paths.temp, file),
+                outdir=archive_path
+            )
+        except:
+            return False
+        return True
 
     @staticmethod
     def __step_install_fonts(config: dict, step: dict):

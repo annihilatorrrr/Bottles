@@ -149,7 +149,7 @@ class MainWindow(Adw.ApplicationWindow):
             self.manager = result
 
             tmp_runners = [x for x in self.manager.runners_available if not x.startswith('sys-')]
-            if len(tmp_runners) == 0:
+            if not tmp_runners:
                 self.show_onboard_view()
 
             # Pages

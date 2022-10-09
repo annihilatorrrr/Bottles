@@ -52,16 +52,9 @@ class LayersStore:
         else:
             raise Exception("No layer name or uuid provided.")
 
-        layer = False
-        for f in glob(pattern):
-            if os.path.isdir(f):
-                layer = f
-                break
-
-        if layer:
+        if layer := next((f for f in glob(pattern) if os.path.isdir(f)), False):
             with open(f"{layer}/layer.yml", "r") as f:
-                conf = yaml.load(f)
-                return conf
+                return yaml.load(f)
 
         return {}
 
@@ -185,9 +178,8 @@ class Layer:
 
                 os.makedirs(os.path.dirname(_layer), exist_ok=True)  # should not be ok, need handling
 
-                if os.path.exists(_layer):
-                    if os.path.islink(_layer):
-                        os.unlink(_layer)
+                if os.path.exists(_layer) and os.path.islink(_layer):
+                    os.unlink(_layer)
 
                 if not duplicate:
                     os.symlink(_source, _layer)
@@ -201,7 +193,7 @@ class Layer:
          directories, use mount_bottle for bottles instead.
         """
         logging.info(f"Mounting path {path} to layer {self.__path}…")
-        _name = name if name else os.path.basename(path)
+        _name = name or os.path.basename(path)
         _uuid = str(uuid.uuid4())
         hashes = Diff.hashify(path)
 
@@ -219,8 +211,7 @@ class Layer:
         This method will mount a layer to the current layer and
         append it to the __mounts list.
         """
-        layer = LayersStore.get(name, _uuid)
-        if layer:
+        if layer := LayersStore.get(name, _uuid):
             logging.info(f"Mounting layer {layer['Name']}…")
             layer["Type"] = "layer"
             path = f"{Paths.layers}/@__{layer['Name']}__{layer['UUID']}"  # TODO: please don't hardcode this :S

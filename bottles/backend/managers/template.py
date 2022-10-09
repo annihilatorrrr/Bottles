@@ -96,7 +96,7 @@ class TemplateManager:
         if path_size < 300000000:
             logging.error(f"Template {template_uuid} is too small!")
             result = False
-        
+
         with open(os.path.join(template_path, "template.yml"), "r") as f:
             template = yaml.load(f)
             if template["uuid"] != template_uuid:

@@ -94,15 +94,17 @@ class ComponentManager:
             '''
 
             if component[1]["Category"] == "runners":
-                if "soda" in component[0].lower() or "caffe" in component[0].lower():
-                    if not is_glibc_min_available():
-                        logging.warning(f"{component[0]} was found but it requires "
-                                        "glibc >= 2.32 and your system is running an older "
-                                        "version. Use the Flatpak instead if you can't "
-                                        "upgrade your system. This runner will be ignored, "
-                                        "please keep in mind that Bottles and all our "
-                                        "installers are only tested with Soda and Caffe runners.")
-                        continue
+                if (
+                    "soda" in component[0].lower()
+                    or "caffe" in component[0].lower()
+                ) and not is_glibc_min_available():
+                    logging.warning(f"{component[0]} was found but it requires "
+                                    "glibc >= 2.32 and your system is running an older "
+                                    "version. Use the Flatpak instead if you can't "
+                                    "upgrade your system. This runner will be ignored, "
+                                    "please keep in mind that Bottles and all our "
+                                    "installers are only tested with Soda and Caffe runners.")
+                    continue
 
                 sub_category = component[1]["Sub-category"]
                 catalog[sub_category][component[0]] = component[1]
@@ -168,7 +170,7 @@ class ComponentManager:
         ):
             GLib.idle_add(_update_func, task_id, count, block_size, total_size, completed)
 
-        existing_file = rename if rename else file
+        existing_file = rename or file
         temp_dest = os.path.join(Paths.temp, file)
         just_downloaded = False
 
@@ -261,7 +263,7 @@ class ComponentManager:
     def extract(name: str, component: str, archive: str) -> True:
         """Extract a component from an archive."""
 
-        if component in ["runner", "runner:proton"]:
+        if component in {"runner", "runner:proton"}:
             path = Paths.runners
         elif component == "dxvk":
             path = Paths.dxvk
@@ -384,11 +386,11 @@ class ComponentManager:
         Note: I know that this is not the most efficient way to do this,
         please give feedback if you know a better way to avoid this.
         '''
-        if component_type in ["runtime", "winebridge"]:
+        if component_type in {"runtime", "winebridge"}:
             with contextlib.suppress(FileNotFoundError):
                 os.remove(os.path.join(Paths.temp, archive))
 
-        if component_type in ["runner", "runner:proton"]:
+        if component_type in {"runner", "runner:proton"}:
             self.__manager.check_runners()
 
         elif component_type == "dxvk":
@@ -416,7 +418,7 @@ class ComponentManager:
         source = post.get("source")
         dest = post.get("dest")
 
-        if component_type in ["runner", "runner:proton"]:
+        if component_type in {"runner", "runner:proton"}:
             path = Paths.runners
         elif component_type == "dxvk":
             path = Paths.dxvk
@@ -437,7 +439,7 @@ class ComponentManager:
     def is_in_use(self, component_type: str, component_name: str):
         bottles = self.__manager.local_bottles
 
-        if component_type in ["runner", "runner:proton"]:
+        if component_type in {"runner", "runner:proton"}:
             return component_name in [b["Runner"] for _, b in bottles.items()]
         if component_type == "dxvk":
             return component_name in [b["DXVK"] for _, b in bottles.items()]
@@ -447,15 +449,13 @@ class ComponentManager:
             return component_name in [b["NVAPI"] for _, b in bottles.items()]
         if component_type == "latencyflex":
             return component_name in [b["LatencyFleX"] for _, b in bottles.items()]
-        if component_type in ["runtime", "winebridge"]:
-            return True
-        return False
+        return component_type in {"runtime", "winebridge"}
 
     def uninstall(self, component_type: str, component_name: str):
         if self.is_in_use(component_type, component_name):
             return Result(False, data={"message": f"Component in use and cannot be removed: {component_name}"})
 
-        if component_type in ["runner", "runner:proton"]:
+        if component_type in {"runner", "runner:proton"}:
             path = ManagerUtils.get_runner_path(component_name)
 
         elif component_type == "dxvk":

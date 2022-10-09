@@ -52,9 +52,7 @@ class CabExtract:
         self.destination = shlex.quote(destination)
         self.name = self.name.replace(".", "_")
 
-        if not self.__checks():
-            return False
-        return self.__extract()
+        return self.__extract() if self.__checks() else False
 
     def __checks(self):
         if not os.path.exists(self.path) and "*" not in self.path:
@@ -83,9 +81,10 @@ class CabExtract:
                     if file already exists as a symlink, remove it
                     preventing broken symlinks when using layers
                     '''
-                    if os.path.exists(os.path.join(self.destination, file)):
-                        if os.path.islink(os.path.join(self.destination, file)):
-                            os.unlink(os.path.join(self.destination, file))
+                    if os.path.exists(
+                        os.path.join(self.destination, file)
+                    ) and os.path.islink(os.path.join(self.destination, file)):
+                        os.unlink(os.path.join(self.destination, file))
 
                     command = [
                         self.cabextract_bin,

@@ -64,7 +64,14 @@ class JournalManager:
             return {}
 
         try:
-            journal = {k: v for k, v in sorted(journal.items(), key=lambda item: item[1]["timestamp"], reverse=True)}
+            journal = dict(
+                sorted(
+                    journal.items(),
+                    key=lambda item: item[1]["timestamp"],
+                    reverse=True,
+                )
+            )
+
         except (KeyError, TypeError):
             journal = {}
 
@@ -128,20 +135,17 @@ class JournalManager:
     def __filter_by_date(journal: dict, period: str):
         """Filter the journal by date."""
         _journal = {}
-        if period == "today":
-            start = datetime.now().date()
-            end = start + timedelta(days=1)
-        elif period == "yesterday":
-            start = datetime.now().date() - timedelta(days=1)
-            end = start + timedelta(days=1)
-        elif period == "week":
-            start = datetime.now().date() - timedelta(days=7)
-            end = datetime.now().date() + timedelta(days=1)
+        if period == "all":
+            return journal
         elif period == "month":
             start = datetime.now().date() - timedelta(days=30)
             end = datetime.now().date() + timedelta(days=1)
-        elif period == "all":
-            return journal
+        elif period == "week":
+            start = datetime.now().date() - timedelta(days=7)
+            end = datetime.now().date() + timedelta(days=1)
+        elif period == "yesterday":
+            start = datetime.now().date() - timedelta(days=1)
+            end = start + timedelta(days=1)
         else:
             start = datetime.now().date()
             end = start + timedelta(days=1)

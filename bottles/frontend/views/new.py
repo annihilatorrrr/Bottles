@@ -97,7 +97,7 @@ class NewView(Adw.Window):
             elif i.startswith('sys-'):
                 ry.append(i)
 
-        if len(rs) > 0:  # use the latest from Soda
+        if rs:  # use the latest from Soda
             self.runner = rs[0]
         elif len(rc) > 0:  # use the latest from caffe
             self.runner = rc[0]
@@ -185,7 +185,7 @@ class NewView(Adw.Window):
         self.headerbar.add_css_class("flat")
         self.stack_create.set_visible_child_name("page_creating")
         self.shortcut_escape.set_action(None)
-        
+
         # avoid giant/empty window
         self.set_default_size(450, 430)
 
@@ -193,11 +193,7 @@ class NewView(Adw.Window):
         if self.selected_env == "custom":
             self.runner = self.manager.runners_available[self.combo_runner.get_selected()]
 
-        if self.combo_arch.get_selected() == 0:
-            arch = "win64"
-        else:
-            arch = "win32"
-
+        arch = "win64" if self.combo_arch.get_selected() == 0 else "win32"
         RunAsync(
             task_func=self.manager.create_bottle,
             callback=self.finish,

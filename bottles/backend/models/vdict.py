@@ -62,12 +62,15 @@ class VDFDict(dict):
 
         if data is not None:
             if not isinstance(data, (list, dict)):
-                raise ValueError("Expected data to be list of pairs or dict, got %s" % type(data))
+                raise ValueError(
+                    f"Expected data to be list of pairs or dict, got {type(data)}"
+                )
+
             self.update(data)
 
     def __repr__(self):
-        out = "%s(" % self.__class__.__name__
-        out += "%s)" % repr(list(self.iteritems()))
+        out = f"{self.__class__.__name__}("
+        out += f"{repr(list(self.iteritems()))})"
         return out
 
     def __len__(self):
@@ -88,7 +91,7 @@ class VDFDict(dict):
         elif isinstance(key, tuple):
             self._verify_key_tuple(key)
         else:
-            raise TypeError("Expected key to be a str or tuple, got %s" % type(key))
+            raise TypeError(f"Expected key to be a str or tuple, got {type(key)}")
         return key
 
     def __setitem__(self, key, value):
@@ -155,7 +158,7 @@ class VDFDict(dict):
     def clear(self):
         super(VDFDict, self).clear()
         self.__kcount.clear()
-        self.__omap = list()
+        self.__omap = []
 
     def get(self, key, *_args):
         return super(VDFDict, self).get(self._normalize_key(key), *_args)
@@ -181,7 +184,7 @@ class VDFDict(dict):
         if isinstance(data, dict):
             data = data.items()
         elif not isinstance(data, list):
-            raise TypeError("Expected data to be a list or dict, got %s" % type(data))
+            raise TypeError(f"Expected data to be a list or dict, got {type(data)}")
 
         for key, value in data:
             self.__setitem__(key, value)

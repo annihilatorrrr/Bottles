@@ -37,10 +37,7 @@ class UbisoftConnectManager:
                 "drive_c/Program Files (x86)/Ubisoft/Ubisoft Game Launcher/cache/configuration/configurations")
         ]
 
-        for path in paths:
-            if os.path.exists(path):
-                return path
-        return None
+        return next((path for path in paths if os.path.exists(path)), None)
 
     @staticmethod
     def is_uconnect_supported(config: dict) -> bool:
@@ -70,7 +67,7 @@ class UbisoftConnectManager:
             return []
 
         with open(conf_path, "r", encoding="iso-8859-15") as c:
-            for r in c.readlines():
+            for r in c:
                 r = r.strip()
 
                 if r.startswith("name:"):

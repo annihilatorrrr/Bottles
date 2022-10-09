@@ -26,11 +26,10 @@ class Start(WineProgram):
             # as it can miss important files due to the wrong
             # current working directory
             _args = f"/unix /wait {file}"
+        elif cwd not in [None, ""] and winepath.is_windows(cwd):
+            _args = f"/wait /dir {cwd} {file}"
         else:
-            if cwd not in [None, ""] and winepath.is_windows(cwd):
-                _args = f"/wait /dir {cwd} {file}"
-            else:
-                _args = f"/wait {file}"
+            _args = f"/wait {file}"
 
         self.launch(
             args=(_args, args),

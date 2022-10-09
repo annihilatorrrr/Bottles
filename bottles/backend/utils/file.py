@@ -50,8 +50,8 @@ class FileUtils:
     def use_insensitive_ext(string):
         """Converts a glob pattern into a case-insensitive glob pattern"""
         ext = string.split('.')[1]
-        globlist = ["[%s%s]" % (c.lower(), c.upper()) for c in ext]
-        return '*.%s' % ''.join(globlist)
+        globlist = [f"[{c.lower()}{c.upper()}]" for c in ext]
+        return f"*.{''.join(globlist)}"
 
     @staticmethod
     def get_human_size(size: float) -> str:
@@ -66,10 +66,7 @@ class FileUtils:
         path = Path(path)
         size = sum(f.stat().st_size for f in path.glob('**/*') if f.is_file())
 
-        if human:
-            return self.get_human_size(size)
-
-        return size
+        return self.get_human_size(size) if human else size
 
     def get_disk_size(self, human: bool = True) -> dict:
         """

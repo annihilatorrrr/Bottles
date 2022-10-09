@@ -55,7 +55,7 @@ class WineProgram:
             program_args = None
 
         command = self.get_command(wineprogram_args)
-        res = WineCommand(
+        return WineCommand(
             self.config,
             command=command,
             terminal=terminal,
@@ -64,9 +64,8 @@ class WineProgram:
             colors=self.colors,
             environment=environment,
             cwd=cwd,
-            arguments=program_args
+            arguments=program_args,
         ).run()
-        return res
 
     def launch_terminal(self, args: str = None):
         self.launch(args=args, terminal=True, action_name="launch_terminal")

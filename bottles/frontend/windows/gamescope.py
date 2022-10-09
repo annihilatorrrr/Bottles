@@ -96,7 +96,7 @@ class GamescopeDialog(Adw.Window):
                     "gamescope_borderless": self.toggle_borderless.get_active(),
                     "gamescope_fullscreen": self.toggle_fullscreen.get_active()}
 
-        for setting in settings.keys():
+        for setting in settings:
             self.manager.update_config(
                 config=self.config,
                 key=setting,

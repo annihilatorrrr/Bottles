@@ -133,7 +133,7 @@ class Manager:
         times["SteamManager"] = time.time()
 
         if not is_cli:
-            times.update(self.checks(install_latest=False, first_run=True))
+            times |= self.checks(install_latest=False, first_run=True)
         else:
             logging.set_silent()
 
@@ -152,11 +152,8 @@ class Manager:
 
     def checks(self, install_latest=False, first_run=False):
         logging.info("Performing Bottles checks…")
-        times = {}
-
         self.check_app_dirs()
-        times["check_app_dirs"] = time.time()
-
+        times = {"check_app_dirs": time.time()}
         self.check_dxvk(install_latest)
         times["check_dxvk"] = time.time()
 
@@ -235,10 +232,13 @@ class Manager:
             logging.info("Bottles path doesn't exist, creating now.")
             os.makedirs(Paths.bottles, exist_ok=True)
 
-        if self.settings.get_boolean("steam-proton-support") and self.steam_manager.is_steam_supported:
-            if not os.path.isdir(Paths.steam):
-                logging.info("Steam path doesn't exist, creating now.")
-                os.makedirs(Paths.steam, exist_ok=True)
+        if (
+            self.settings.get_boolean("steam-proton-support")
+            and self.steam_manager.is_steam_supported
+            and not os.path.isdir(Paths.steam)
+        ):
+            logging.info("Steam path doesn't exist, creating now.")
+            os.makedirs(Paths.steam, exist_ok=True)
 
         if not os.path.isdir(Paths.layers):
             logging.info("Layers path doesn't exist, creating now.")
@@ -377,32 +377,33 @@ class Manager:
             _runner = os.path.basename(os.path.normpath(runner))
             self.runners_available.append(_runner)
 
-        if len(self.runners_available) > 0:
+        if self.runners_available:
             logging.info("Runners found:\n - {0}".format("\n - ".join(self.runners_available)))
 
         tmp_runners = [x for x in self.runners_available if not x.startswith('sys-')]
 
-        if len(tmp_runners) == 0 and install_latest:
+        if not tmp_runners and install_latest:
             logging.warning("No runners found.")
 
-            if self.utils_conn.check_connection():
-                # if connected, install the latest runner from repository
-                try:
-                    if not self.window.settings.get_boolean("release-candidate"):
-                        tmp_runners = []
-                        for runner in self.supported_wine_runners.items():
-                            if runner[1]["Channel"] not in ["rc", "unstable"]:
-                                tmp_runners.append(runner)
-                        runner_name = next(iter(tmp_runners))[0]
-                    else:
-                        tmp_runners = self.supported_wine_runners
-                        runner_name = next(iter(tmp_runners))
-                    self.component_manager.install("runner", runner_name)
-                except StopIteration:
-                    return False
-            else:
+            if not self.utils_conn.check_connection():
                 return False
 
+                # if connected, install the latest runner from repository
+            try:
+                if not self.window.settings.get_boolean("release-candidate"):
+                    tmp_runners = [
+                        runner
+                        for runner in self.supported_wine_runners.items()
+                        if runner[1]["Channel"] not in ["rc", "unstable"]
+                    ]
+
+                    runner_name = next(iter(tmp_runners))[0]
+                else:
+                    tmp_runners = self.supported_wine_runners
+                    runner_name = next(iter(tmp_runners))
+                self.component_manager.install("runner", runner_name)
+            except StopIteration:
+                return False
         self.runners_available = sorted(self.runners_available, reverse=True)
         return True
 
@@ -430,8 +431,7 @@ class Manager:
         if os.path.exists(manifest):
             with open(manifest, "r") as f:
                 data = yaml.load(f)
-                version = data.get("version")
-                if version:
+                if version := data.get("version"):
                     version = f"runtime-{version}"
                     self.runtimes_available = [version]
 
@@ -454,28 +454,23 @@ class Manager:
         version_file = os.path.join(Paths.winebridge, "VERSION")
         if os.path.exists(version_file):
             with open(version_file, "r") as f:
-                version = f.read().strip()
-                if version:
+                if version := f.read().strip():
                     self.winebridge_available = [f"winebridge-{version}"]
 
     def check_dxvk(self, install_latest: bool = True):
-        res = self.__check_component("dxvk", install_latest)
-        if res:
+        if res := self.__check_component("dxvk", install_latest):
             self.dxvk_available = res
 
     def check_vkd3d(self, install_latest: bool = True):
-        res = self.__check_component("vkd3d", install_latest)
-        if res:
+        if res := self.__check_component("vkd3d", install_latest):
             self.vkd3d_available = res
 
     def check_nvapi(self, install_latest: bool = True):
-        res = self.__check_component("nvapi", install_latest)
-        if res:
+        if res := self.__check_component("nvapi", install_latest):
             self.nvapi_available = res
 
     def check_latencyflex(self, install_latest: bool = True):
-        res = self.__check_component("latencyflex", install_latest)
-        if res:
+        if res := self.__check_component("latencyflex", install_latest):
             self.latencyflex_available = res
 
     def __check_component(self, component_type: str, install_latest: bool = True) -> Union[bool, list]:
@@ -673,45 +668,44 @@ class Manager:
                 executable_path.replace("C:\\", "drive_c\\").replace("\\", "/")
             )
 
-            if os.path.exists(path_check):
-                if executable_name not in found:
-                    installed_programs.append({
-                        "executable": executable_name,
-                        "arguments": "",
-                        "name": executable_name.split(".")[0],
-                        "path": executable_path,
-                        "folder": program_folder,
-                        "icon": "com.usebottles.bottles-program",
-                        "id": str(uuid.uuid4()),
-                        "script": "",
-                        "dxvk": config["Parameters"]["dxvk"],
-                        "vkd3d": config["Parameters"]["vkd3d"],
-                        "dxvk_nvapi": config["Parameters"]["dxvk_nvapi"],
-                        "fsr": config["Parameters"]["fsr"],
-                        "pulseaudio_latency": config["Parameters"]["pulseaudio_latency"],
-                        "virtual_desktop": config["Parameters"]["virtual_desktop"],
-                        "auto_discovered": True
-                    })
-                    found.append(executable_name)
-                    
+            if os.path.exists(path_check) and executable_name not in found:
+                installed_programs.append({
+                    "executable": executable_name,
+                    "arguments": "",
+                    "name": executable_name.split(".")[0],
+                    "path": executable_path,
+                    "folder": program_folder,
+                    "icon": "com.usebottles.bottles-program",
+                    "id": str(uuid.uuid4()),
+                    "script": "",
+                    "dxvk": config["Parameters"]["dxvk"],
+                    "vkd3d": config["Parameters"]["vkd3d"],
+                    "dxvk_nvapi": config["Parameters"]["dxvk_nvapi"],
+                    "fsr": config["Parameters"]["fsr"],
+                    "pulseaudio_latency": config["Parameters"]["pulseaudio_latency"],
+                    "virtual_desktop": config["Parameters"]["virtual_desktop"],
+                    "auto_discovered": True
+                })
+                found.append(executable_name)
+
             win_steam_manager = SteamManager(config, is_windows=True)
 
             if self.window.settings.get_boolean("steam-programs") \
-                    and win_steam_manager.is_steam_supported:
+                        and win_steam_manager.is_steam_supported:
                 programs_names = [p.get("name", "") for p in installed_programs]
                 for app in win_steam_manager.get_installed_apps_as_programs():
                     if app["name"] not in programs_names:
                         installed_programs.append(app)
 
             if self.window.settings.get_boolean("epic-games") \
-                    and EpicGamesStoreManager.is_epic_supported(config):
+                        and EpicGamesStoreManager.is_epic_supported(config):
                 programs_names = [p.get("name", "") for p in installed_programs]
                 for app in EpicGamesStoreManager.get_installed_games(config):
                     if app["name"] not in programs_names:
                         installed_programs.append(app)
 
             if self.window.settings.get_boolean("ubisoft-connect") \
-                    and UbisoftConnectManager.is_uconnect_supported(config):
+                        and UbisoftConnectManager.is_uconnect_supported(config):
                 programs_names = [p.get("name", "") for p in installed_programs]
                 for app in UbisoftConnectManager.get_installed_games(config):
                     if app["name"] not in programs_names:
@@ -830,20 +824,14 @@ class Manager:
                     # NOTE: the following code tries to create the caching directories
                     #       if one or more already exist, it will fail silently as there
                     #       is no need to create them again.
-                    try:
+                    with contextlib.suppress(shutil.Error):
                         shutil.move(os.path.join(_bottle, c), os.path.join(_bottle, "cache", "dxvk_state"))
-                    except shutil.Error:
-                        pass
                 elif "vkd3d-proton.cache" in c:
-                    try:
+                    with contextlib.suppress(shutil.Error):
                         shutil.move(os.path.join(_bottle, c), os.path.join(_bottle, "cache", "vkd3d_shader"))
-                    except shutil.Error:
-                        pass
                 elif c == "GLCache":
-                    try:
+                    with contextlib.suppress(shutil.Error):
                         shutil.move(os.path.join(_bottle, c), os.path.join(_bottle, "cache", "gl_shader"))
-                    except shutil.Error:
-                        pass
 
         for b in bottles:
             '''
@@ -856,8 +844,8 @@ class Manager:
             logging.info("Bottles found:\n - {0}".format("\n - ".join(self.local_bottles)))
 
         if self.settings.get_boolean("steam-proton-support") \
-                and self.steam_manager.is_steam_supported \
-                and not self.is_cli:
+                    and self.steam_manager.is_steam_supported \
+                    and not self.is_cli:
             self.steam_manager.update_bottles()
             self.local_bottles.update(self.steam_manager.list_prefixes())
 
@@ -895,20 +883,19 @@ class Manager:
             wineboot.kill()
             wineserver.wait()
 
-        if scope != "":
+        if scope:
             if remove:
                 del config[scope][key]
             elif config[scope].get(key) and fallback:
                 config[scope][f"{key}-{uuid.uuid4()}"] = value
             else:
                 config[scope][key] = value
+        elif remove:
+            del config[key]
+        elif config.get(key) and fallback:
+            config[f"{key}-{uuid.uuid4()}"] = value
         else:
-            if remove:
-                del config[key]
-            elif config.get(key) and fallback:
-                config[f"{key}-{uuid.uuid4()}"] = value
-            else:
-                config[key] = value
+            config[key] = value
 
         with open(os.path.join(bottle_path, "bottle.yml"), "w") as conf_file:
             yaml.dump(config, conf_file, indent=4)
@@ -951,9 +938,9 @@ class Manager:
             highest version.
             '''
             config["DXVK"] = sorted(
-                [dxvk for dxvk in self.dxvk_available],
-                key=lambda x: x.split("-")[-1]
+                list(self.dxvk_available), key=lambda x: x.split("-")[-1]
             )[-1]
+
 
         if config["VKD3D"] not in self.vkd3d_available:
             '''
@@ -961,9 +948,9 @@ class Manager:
             highest version.
             '''
             config["VKD3D"] = sorted(
-                [vkd3d for vkd3d in self.vkd3d_available],
-                key=lambda x: x.split("-")[-1]
+                list(self.vkd3d_available), key=lambda x: x.split("-")[-1]
             )[-1]
+
 
         if config["NVAPI"] not in self.dxvk_available:
             '''
@@ -971,9 +958,9 @@ class Manager:
             highest version.
             '''
             config["NVAPI"] = sorted(
-                [nvapi for nvapi in self.nvapi_available],
-                key=lambda x: x.split("-")[-1]
+                list(self.nvapi_available), key=lambda x: x.split("-")[-1]
             )[-1]
+
 
         # create the bottle path
         bottle_path = os.path.join(Paths.bottles, config['Name'])
@@ -983,20 +970,18 @@ class Manager:
             If the bottle does not exist, create it, else
             append a random number to the name.
             '''
-            os.makedirs(bottle_path)
         else:
             rnd = random.randint(100, 200)
             bottle_path = f"{bottle_path}__{rnd}"
             config["Name"] = f"{config['Name']}__{rnd}"
             config["Path"] = f"{config['Path']}__{rnd}"
-            os.makedirs(bottle_path)
-
+        os.makedirs(bottle_path)
         # write the bottle config file
         try:
             with open(os.path.join(bottle_path, "bottle.yml"), "w") as conf_file:
                 yaml.dump(config, conf_file, indent=4)
                 conf_file.close()
-        except (OSError, IOError, yaml.YAMLError, FileNotFoundError, PermissionError) as e:
+        except (OSError, IOError, yaml.YAMLError) as e:
             logging.error(f"Error writing config file {e}")
             return False
 
@@ -1121,7 +1106,7 @@ class Manager:
         bottle_name_path = bottle_name.replace(" ", "-")
 
         # get bottle path
-        if path == "":
+        if not path:
             # if no path is specified, use the name as path
             bottle_custom_path = False
             bottle_complete_path = os.path.join(Paths.bottles, bottle_name_path)
@@ -1215,7 +1200,7 @@ class Manager:
                 log_update(_("Running as Flatpak, sandboxing userdir…"))
             if sandbox:
                 log_update(_("Sandboxing userdir…"))
-                
+
             userdir = f"{bottle_complete_path}/drive_c/users"
             if os.path.exists(userdir):
                 # userdir may not exists when unpacking a template, safely
@@ -1229,7 +1214,7 @@ class Manager:
                             _dir_path = os.path.join(_user_dir, _dir)
                             if os.path.islink(_dir_path):
                                 links.append(_dir_path)
-                        
+
                         _documents_dir = os.path.join(_user_dir, "Documents")
                         if os.path.isdir(_documents_dir):
                             for _dir in os.listdir(_documents_dir):
@@ -1243,7 +1228,7 @@ class Manager:
                                 _dir_path = os.path.join(_win_dir, _dir)
                                 if os.path.islink(_dir_path):
                                     links.append(_dir_path)
-                
+
                 for link in links:
                     with contextlib.suppress(IOError, OSError):
                         os.unlink(link)
@@ -1257,7 +1242,7 @@ class Manager:
             logging.info("Setting Windows version…")
             log_update(_("Setting Windows version…"))
             if "soda" not in runner_name.lower() \
-                    and "caffe" not in runner_name.lower():  # Caffe/Soda came with win10 by default
+                        and "caffe" not in runner_name.lower():  # Caffe/Soda came with win10 by default
                 rk.set_windows(config["Windows"])
                 wineboot.update()
 
@@ -1311,7 +1296,7 @@ class Manager:
                     config["Parameters"][prm] = env["Parameters"][prm]
 
             if (not template and config["Parameters"]["dxvk"]) \
-                    or (template and template["config"]["DXVK"] != dxvk):
+                        or (template and template["config"]["DXVK"] != dxvk):
                 # perform dxvk installation if configured
                 logging.info("Installing DXVK…")
                 log_update(_("Installing DXVK…"))
@@ -1319,7 +1304,7 @@ class Manager:
                 template_updated = True
 
             if not template and config["Parameters"]["vkd3d"] \
-                    or (template and template["config"]["VKD3D"] != vkd3d):
+                        or (template and template["config"]["VKD3D"] != vkd3d):
                 # perform vkd3d installation if configured
                 logging.info("Installing VKD3D…")
                 log_update(_("Installing VKD3D…"))
@@ -1327,7 +1312,7 @@ class Manager:
                 template_updated = True
 
             if not template and config["Parameters"]["dxvk_nvapi"] \
-                    or (template and template["config"]["NVAPI"] != nvapi):
+                        or (template and template["config"]["NVAPI"] != nvapi):
                 # perform nvapi installation if configured
                 logging.info("Installing DXVK-NVAPI…")
                 log_update(_("Installing DXVK-NVAPI…"))
@@ -1405,7 +1390,7 @@ class Manager:
     def get_latest_runner(self, runner_type: str = "wine") -> list:
         """Return the latest available runner for a given type."""
         try:
-            if runner_type in ["", "wine"]:
+            if runner_type in {"", "wine"}:
                 return self.__sort_runners("soda")
             return self.__sort_runners("proton")
         except IndexError:
@@ -1424,12 +1409,12 @@ class Manager:
         wineserver.wait()
 
         if config.get("Path"):
-            logging.info(f"Removing applications installed with the bottle…")
+            logging.info("Removing applications installed with the bottle…")
             for inst in glob(f"{Paths.applications}/{config.get('Name')}--*"):
                 os.remove(inst)
 
             if config.get("Custom_Path"):
-                logging.info(f"Removing placeholder…")
+                logging.info("Removing placeholder…")
                 with contextlib.suppress(FileNotFoundError):
                     os.remove(os.path.join(
                         Paths.bottles,
@@ -1437,7 +1422,7 @@ class Manager:
                         "placeholder.yml"
                     ))
 
-            logging.info(f"Removing the bottle…")
+            logging.info("Removing the bottle…")
             path = ManagerUtils.get_bottle_path(config)
             shutil.rmtree(path, ignore_errors=True)
 
@@ -1502,30 +1487,24 @@ class Manager:
 
         if component == "dxvk":
             _version = config.get("DXVK")
-            _version = version if version else _version
-            if not _version:
-                _version = self.dxvk_available[0]
+            _version = version or _version or self.dxvk_available[0]
             manager = DXVKComponent(_version)
-        elif component == "vkd3d":
-            _version = config.get("VKD3D")
-            _version = version if version else _version
-            if not _version:
-                _version = self.vkd3d_available[0]
-            manager = VKD3DComponent(_version)
-        elif component == "nvapi":
-            _version = config.get("NVAPI")
-            _version = version if version else _version
-            if not _version:
-                _version = self.nvapi_available[0]
-            manager = NVAPIComponent(_version)
         elif component == "latencyflex":
             _version = config.get("LatencyFleX")
-            _version = version if version else _version
+            _version = version or _version
             if not _version:
                 if len(self.latencyflex_available) == 0:
                     self.check_latencyflex(install_latest=True)
                 _version = self.latencyflex_available[0]
             manager = LatencyFleXComponent(_version)
+        elif component == "nvapi":
+            _version = config.get("NVAPI")
+            _version = version or _version or self.nvapi_available[0]
+            manager = NVAPIComponent(_version)
+        elif component == "vkd3d":
+            _version = config.get("VKD3D")
+            _version = version or _version or self.vkd3d_available[0]
+            manager = VKD3DComponent(_version)
         else:
             return Result(
                 status=False,

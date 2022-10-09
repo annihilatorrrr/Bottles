@@ -38,17 +38,17 @@ class SteamGridDBManager:
         if res.status_code == 200:
             return SteamGridDBManager.__save_grid(res.json(), config)
 
-    def __save_grid(url: str, config: dict):
+    def __save_grid(self, config: dict):
         grids_path = os.path.join(ManagerUtils.get_bottle_path(config), 'grids')
         if not os.path.exists(grids_path):
             os.makedirs(grids_path)
-            
-        ext = url.split('.')[-1]
-        filename = str(uuid.uuid4()) + '.' + ext
+
+        ext = self.split('.')[-1]
+        filename = f'{str(uuid.uuid4())}.{ext}'
         path = os.path.join(grids_path, filename)
 
         try:
-            r = requests.get(url)
+            r = requests.get(self)
             with open(path, 'wb') as f:
                 f.write(r.content)
         except Exception as e:

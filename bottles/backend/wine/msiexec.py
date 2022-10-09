@@ -87,10 +87,7 @@ class MsiExec(WineProgram):
         self.launch(args=args, communicate=True, minimal=True, cwd=cwd, action_name="uninstall")
 
     def apply_patch(self, patch: str, update: bool = False, cwd: str = None):
-        args = f"/p {patch}"
-        if update:
-            args = f" /update {patch}"
-
+        args = f" /update {patch}" if update else f"/p {patch}"
         self.launch(args=args, communicate=True, minimal=True, cwd=cwd, action_name="apply_path")
 
     def uninstall_patch(self, patch: str, product: str = None, cwd: str = None):

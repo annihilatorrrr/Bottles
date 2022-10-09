@@ -91,7 +91,7 @@ class TerminalUtils:
         if self.terminal[0] == 'easyterm.py':
             command = ' '.join(self.terminal) % (colors, f'bash -c "{command}"')
             if "ENABLE_BASH" in os.environ:
-                command = ' '.join(self.terminal) % (colors, f"bash")
+                command = ' '.join(self.terminal) % (colors, "bash")
         elif self.terminal[0] in ['kgx', 'xfce4-terminal']:
             command = ' '.join(self.terminal) % "'sh -c %s'" % f'"{command}"'
         elif self.terminal[0] in ['kitty', 'foot', 'konsole', 'gnome-terminal']:
@@ -111,7 +111,4 @@ class TerminalUtils:
     def launch_snake(self):
         snake_path = os.path.dirname(os.path.realpath(__file__))
         snake_path = os.path.join(snake_path, "snake.py")
-        self.execute(
-            command="python %s" % snake_path,
-            colors="easter"
-        )
+        self.execute(command=f"python {snake_path}", colors="easter")

@@ -64,14 +64,18 @@ class JournalDialog(Adw.Window):
         }
 
         for _, value in self.journal:
-            if query.lower() in value['message'].lower() \
-                    and (severity == "" or severity == value['severity']):
-                self.store.append([
-                    '<span foreground="{}"><b>{}</b></span>'.format(
-                        colors[value['severity']], value['severity'].capitalize()),
-                    value['timestamp'],
-                    value['message']
-                ])
+            if query.lower() in value['message'].lower() and severity in [
+                "",
+                value['severity'],
+            ]:
+                self.store.append(
+                    [
+                        f"""<span foreground="{colors[value['severity']]}"><b>{value['severity'].capitalize()}</b></span>""",
+                        value['timestamp'],
+                        value['message'],
+                    ]
+                )
+
 
         self.tree_view.set_model(self.store)
         self.tree_view.set_search_column(1)

@@ -19,8 +19,6 @@ class Notepad(WineProgram):
         return self.launch(args=args, communicate=True, action_name="open")
 
     def print(self, path: str, printer_name: str = None):
-        args = f"/p {path}"
-        if printer_name:
-            args = f"/pt {path} {printer_name}"
+        args = f"/pt {path} {printer_name}" if printer_name else f"/p {path}"
         return self.launch(args=args, communicate=True, action_name="print")
 

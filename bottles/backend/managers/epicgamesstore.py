@@ -37,10 +37,7 @@ class EpicGamesStoreManager:
                 "drive_c/ProgramData/Epic/UnrealEngineLauncher/LauncherInstalled.dat")
         ]
 
-        for path in paths:
-            if os.path.exists(path):
-                return path
-        return None
+        return next((path for path in paths if os.path.exists(path)), None)
 
     @staticmethod
     def is_epic_supported(config: dict) -> bool:
@@ -63,13 +60,13 @@ class EpicGamesStoreManager:
         with open(dat_path, "r") as dat:
             data = json.load(dat)
 
+            _path = "C:\\Program Files (x86)\\Epic Games\\Launcher\\Portal\\Binaries\\Win32\\" \
+                        "EpicGamesLauncher.exe"
+            _executable = _path.split("\\")[-1]
             for game in data["InstallationList"]:
                 _uri = f"-com.epicgames.launcher://apps/{game['AppName']}?action=launch&silent=true"
                 _args = f"-opengl -SkipBuildPatchPrereq {_uri}"
                 _name = game["InstallLocation"].split("\\")[-1]
-                _path = "C:\\Program Files (x86)\\Epic Games\\Launcher\\Portal\\Binaries\\Win32\\" \
-                        "EpicGamesLauncher.exe"
-                _executable = _path.split("\\")[-1]
                 _folder = ManagerUtils.get_exe_parent_dir(config, _path)
                 games.append({
                     "executable": _path,

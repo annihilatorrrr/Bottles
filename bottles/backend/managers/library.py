@@ -91,7 +91,7 @@ class LibraryManager:
         """
         with open(self.library_path, 'w') as library_file:
             yaml.dump(self.__library, library_file)
-        logging.info(f'Library saved')
+        logging.info('Library saved')
 
     def get_library(self):
         """

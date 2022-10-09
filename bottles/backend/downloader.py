@@ -47,13 +47,10 @@ class Downloader:
                 headers = {"User-Agent": "curl/7.79.1"}
                 response = requests.get(self.url, stream=True, headers=headers)
                 total_size = int(response.headers.get("content-length", 0))
-                block_size = 1024
-                count = 0
-
                 if total_size != 0:
-                    for data in response.iter_content(block_size):
+                    block_size = 1024
+                    for count, data in enumerate(response.iter_content(block_size), start=1):
                         file.write(data)
-                        count += 1
                         if self.func is not None:
                             if self.task_id:
                                 GLib.idle_add(
@@ -95,18 +92,18 @@ class Downloader:
         c_close, c_complete, c_incomplete = "\033[0m", "\033[92m", "\033[90m"
         try:
             print(
-                f"\r{c_incomplete if percent < 100 else c_complete}{name} ({percent}%) \
-    {'━' * int(percent / 2)} ({done_str}/{total_str} - {speed_str})",
-                end=""
+                f"\r{c_incomplete if percent < 100 else c_complete}{name} ({percent}%) \\n            #    {'━' * (percent // 2)} ({done_str}/{total_str} - {speed_str})",
+                end="",
             )
+
             if percent == 100:
                 print(f"{c_close}\n")
         except UnicodeEncodeError:
             # WORKAROUND for unsupported characters <https://github.com/bottlesdevs/Bottles/issues/2017>
             print(
-                f"\r{c_incomplete if percent < 100 else c_complete}{name} ({percent}%) \
-    {'━' * int(percent / 2)} ({done_str}/{total_str} - {speed_str})",
-                end=""
+                f"\r{c_incomplete if percent < 100 else c_complete}{name} ({percent}%) \\n            #    {'━' * (percent // 2)} ({done_str}/{total_str} - {speed_str})",
+                end="",
             )
+
             if percent == 100:
                 print(f"{c_close}\n")

@@ -39,9 +39,7 @@ class DisplayUtils:
             shell=True
         ).communicate()[0].decode("utf-8").lower()
 
-        if _query in _proc:
-            return True
-        return False
+        return _query in _proc
 
     @staticmethod
     def display_server_type():

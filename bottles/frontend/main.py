@@ -174,8 +174,7 @@ class Bottles(Adw.Application):
                 if a.endswith(('.exe', '.msi', '.bat', '.lnk')):
                     self.arg_exe = a
 
-        uri = commands.lookup_value(GLib.OPTION_REMAINING)
-        if uri:
+        if uri := commands.lookup_value(GLib.OPTION_REMAINING):
             return self.__process_uri(uri)
 
         self.do_activate()
@@ -194,7 +193,11 @@ class Bottles(Adw.Application):
             return 0
 
         _wrong_uri_error = _("Invalid URI (syntax: bottles:run/<bottle>/<program>)")
-        if not len(uri) > 0 or not uri.startswith('bottles:run/') or len(uri.split('/')) != 3:
+        if (
+            len(uri) <= 0
+            or not uri.startswith('bottles:run/')
+            or len(uri.split('/')) != 3
+        ):
             print(_wrong_uri_error)
             return False
 

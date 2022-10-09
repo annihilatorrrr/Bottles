@@ -84,7 +84,9 @@ class BottleViewEntry(Adw.ActionRow):
             self.set_subtitle(update_date)
         self.label_env.set_text(_(self.config.get("Environment")))
         self.label_env_context.add_class(
-            "tag-%s" % self.config.get("Environment").lower())
+            f'tag-{self.config.get("Environment").lower()}'
+        )
+
 
         '''If config is broken'''
         if self.config.get("Broken"):
@@ -181,9 +183,7 @@ class BottleView(Adw.Bin):
     @staticmethod
     def __filter_bottles(row, terms=None):
         text = row.get_title().lower()
-        if terms.lower() in text:
-            return True
-        return False
+        return terms.lower() in text
 
     def idle_update_bottles(self):
         self.__bottles = {}

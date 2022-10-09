@@ -154,9 +154,9 @@ class BottleView(Adw.PreferencesPage):
     def on_drop(self, drop_target, value: Gdk.FileList, x, y, user_data=None):
         self.drop_overlay.set_visible(False)
         files: List[Gio.File] = value.get_files()
-        args=""
         file=files[0]
         if ".exe" in file.get_basename().split("/")[-1] or ".msi" in file.get_basename().split("/")[-1]:
+            args=""
             executor = WineExecutor(
                 self.config,
                 exec_path=file.get_path(),
@@ -192,7 +192,7 @@ class BottleView(Adw.PreferencesPage):
         # set update_date
         update_date = datetime.strptime(self.config.get("Update_Date"), "%Y-%m-%d %H:%M:%S.%f")
         update_date = update_date.strftime("%b %d %Y %H:%M:%S")
-        self.label_name.set_tooltip_text(_("Updated: %s" % update_date))
+        self.label_name.set_tooltip_text(_(f"Updated: {update_date}"))
 
         # set arch
         self.label_arch.set_text(self.config.get("Arch", "n/a").capitalize())
@@ -213,7 +213,7 @@ class BottleView(Adw.PreferencesPage):
         # check for old versioning system enabled
         if config["Versioning"]:
             self.__upgrade_versioning()
-        
+
         if config["Runner"] not in self.manager.runners_available:
             self.__alert_missing_runner()
 
@@ -492,7 +492,7 @@ the Bottles' preferences or choose a new one to run applications.")
             dialog.present()
 
     def __set_steam_rules(self):
-        status = False if self.config.get("Environment") == "Steam" else True
+        status = self.config.get("Environment") != "Steam"
 
         for w in [self.btn_delete, self.btn_backup_full, self.btn_duplicate]:
             w.set_visible(status)
