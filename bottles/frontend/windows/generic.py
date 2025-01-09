@@ -20,14 +20,13 @@ from gettext import gettext as _
 
 
 class MessageDialog(Gtk.MessageDialog):
-
     def __init__(self, window, message=_("An error has occurred."), log=False):
         Gtk.MessageDialog.__init__(
             self,
             destroy_with_parent=True,
             message_type=Gtk.MessageType.WARNING,
             buttons=Gtk.ButtonsType.OK_CANCEL,
-            text=message
+            text=message,
         )
         self.set_transient_for(window)
         self.set_modal(True)
@@ -46,7 +45,6 @@ class MessageDialog(Gtk.MessageDialog):
 
 
 class SourceDialog(Adw.Window):
-
     def __init__(self, parent, title, message, buttons=None, lang="yaml", **kwargs):
         super().__init__(**kwargs)
         if buttons is None:
@@ -73,14 +71,14 @@ class SourceDialog(Adw.Window):
             highlight_syntax=True,
             highlight_matching_brackets=True,
             style_scheme=style_scheme_manager.get_scheme("oblivion"),
-            language=lang_manager.get_language(self.lang)
+            language=lang_manager.get_language(self.lang),
         )
         source_view = GtkSource.View(
             buffer=source_buffer,
             show_line_numbers=True,
             show_line_marks=True,
             tab_width=4,
-            monospace=True
+            monospace=True,
         )
         source_buffer = source_view.get_buffer()
 
@@ -111,7 +109,6 @@ class SourceDialog(Adw.Window):
 
 
 class TextDialog(Adw.Window):
-
     def __init__(self, parent, title, message, **kwargs):
         super().__init__(**kwargs)
         self.set_default_size(700, 700)
@@ -181,7 +178,7 @@ class WebDialog(Adw.Window):
         btn_copy.connect("clicked", self.__copy_text)
         btn_copy.set_tooltip_text(_("Copy to clipboard"))
 
-        webview.load_html(self.message, "file://")
+        # webview.load_html(self.message, "file://")
         # scrolled.append(webview)
 
         box.append(headerbar)
@@ -192,4 +189,3 @@ class WebDialog(Adw.Window):
     def __copy_text(self, widget):
         clipboard = Gdk.Display.get_clipboard(Gdk.Display.get_default())
         clipboard.set_content(Gdk.ContentProvider.new_for_value(self.message))
-

@@ -1,6 +1,7 @@
 using Gtk 4.0;
+using Adw 1;
 
-template LoadingView : .AdwBin {
+template $LoadingView: Adw.Bin {
   WindowHandle {
     hexpand: true;
     vexpand: true;
@@ -8,11 +9,22 @@ template LoadingView : .AdwBin {
     Box {
       orientation: vertical;
 
-      .AdwStatusPage {
-        icon-name: "com.usebottles.bottles";
+      Adw.StatusPage loading_status_page {
         title: _("Starting up…");
         hexpand: true;
         vexpand: true;
+      }
+
+      Button btn_go_offline {
+        margin-bottom: 20;
+        valign: center;
+        halign: center;
+        label: _("Continue Offline");
+
+        styles [
+          "destructive-action",
+          "pill",
+        ]
       }
 
       Label label_fetched {

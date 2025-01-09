@@ -15,6 +15,7 @@ bottles_sources = [
   'gamescope.py',
   'vkbasalt.py',
   'fsr.py',
+  'mangohud.py',
   'display.py',
   'generic_cli.py',
   'journal.py',
@@ -26,7 +27,7 @@ bottles_sources = [
   'exclusionpatterns.py',
   'upgradeversioning.py',
   'vmtouch.py',
-  'main_window.py',
+  'window.py',
 ]
 
 install_data(bottles_sources, install_dir: dialogsdir)

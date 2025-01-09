@@ -15,13 +15,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
 import uuid
 from datetime import datetime
 from gettext import gettext as _
 from typing import List, Optional
 
-from gi.repository import Gtk, Gio, Adw, Gdk, GLib
+from gi.repository import Gtk, Gio, Adw, Gdk, GLib, Xdp
 
 from bottles.backend.managers.backup import BackupManager
 from bottles.backend.models.config import BottleConfig
@@ -47,9 +46,9 @@ from bottles.frontend.windows.duplicate import DuplicateDialog
 from bottles.frontend.windows.upgradeversioning import UpgradeVersioningDialog
 
 
-@Gtk.Template(resource_path='/com/usebottles/bottles/details-bottle.ui')
+@Gtk.Template(resource_path="/com/usebottles/bottles/details-bottle.ui")
 class BottleView(Adw.PreferencesPage):
-    __gtype_name__ = 'DetailsBottle'
+    __gtype_name__ = "DetailsBottle"
     __registry = []
 
     # region Widgets
@@ -79,6 +78,7 @@ class BottleView(Adw.PreferencesPage):
     btn_reboot = Gtk.Template.Child()
     btn_browse = Gtk.Template.Child()
     btn_forcestop = Gtk.Template.Child()
+    btn_nv_forcestop = Gtk.Template.Child()
     btn_update = Gtk.Template.Child()
     btn_toggle_removed = Gtk.Template.Child()
     btn_backup_config = Gtk.Template.Child()
@@ -109,13 +109,14 @@ class BottleView(Adw.PreferencesPage):
         self.manager = details.window.manager
         self.stack_bottle = details.stack_bottle
         self.leaflet = details.leaflet
+        self.details = details
         self.config = config
         self.show_hidden = False
 
-        self.target.connect('drop', self.on_drop)
+        self.target.connect("drop", self.on_drop)
         self.add_controller(self.target)
-        self.target.connect('enter', self.on_enter)
-        self.target.connect('leave', self.on_leave)
+        self.target.connect("enter", self.on_enter)
+        self.target.connect("leave", self.on_leave)
 
         self.add_shortcuts.connect("clicked", self.add)
         self.install_programs.connect("clicked", self.__change_page, "installers")
@@ -138,30 +139,23 @@ class BottleView(Adw.PreferencesPage):
         self.btn_shutdown.connect("clicked", self.wineboot, 2)
         self.btn_reboot.connect("clicked", self.wineboot, 1)
         self.btn_forcestop.connect("clicked", self.wineboot, 0)
+        self.btn_nv_forcestop.connect("clicked", self.wineboot, -2)
         self.btn_update.connect("clicked", self.__scan_programs)
         self.btn_toggle_removed.connect("clicked", self.__toggle_removed)
         self.btn_backup_config.connect("clicked", self.__backup, "config")
         self.btn_backup_full.connect("clicked", self.__backup, "full")
         self.btn_duplicate.connect("clicked", self.__duplicate)
         self.btn_flatpak_doc.connect(
-            "clicked",
-            open_doc_url,
-            "flatpak/black-screen-or-silent-crash"
+            "clicked", open_doc_url, "flatpak/black-screen-or-silent-crash"
         )
-
-
-        if "FLATPAK_ID" in os.environ:
-            '''
-            If Flatpak, show the btn_flatpak_doc widget to reach
-            the documentation on how to expose directories
-            '''
-            self.btn_flatpak_doc.set_visible(True)
 
     def __change_page(self, _widget, page_name):
         """
         This function try to change the page based on user choice, if
         the page is not available, it will show the "bottle" page.
         """
+        if page_name == "taskmanager":
+            self.details.view_taskmanager.update(config=self.config)
         try:
             self.stack_bottle.set_visible_child_name(page_name)
             self.leaflet.navigate(Adw.NavigationDirection.FORWARD)
@@ -173,7 +167,10 @@ class BottleView(Adw.PreferencesPage):
         files: List[Gio.File] = value.get_files()
         args = ""
         file = files[0]
-        if ".exe" in file.get_basename().split("/")[-1] or ".msi" in file.get_basename().split("/")[-1]:
+        if (
+            ".exe" in file.get_basename().split("/")[-1]
+            or ".msi" in file.get_basename().split("/")[-1]
+        ):
             executor = WineExecutor(
                 self.config,
                 exec_path=file.get_path(),
@@ -188,7 +185,10 @@ class BottleView(Adw.PreferencesPage):
 
         else:
             self.window.show_toast(
-                _("File \"{0}\" is not a .exe or .msi file").format(file.get_basename().split("/")[-1]))
+                _('File "{0}" is not a .exe or .msi file').format(
+                    file.get_basename().split("/")[-1]
+                )
+            )
 
     def on_enter(self, drop_target, x, y):
         self.drop_overlay.set_visible(True)
@@ -227,8 +227,10 @@ class BottleView(Adw.PreferencesPage):
         if config.Versioning:
             self.__upgrade_versioning()
 
-        if config.Runner not in self.manager.runners_available \
-                and not self.config.Environment == "Steam":
+        if (
+            config.Runner not in self.manager.runners_available
+            and not self.config.Environment == "Steam"
+        ):
             self.__alert_missing_runner()
 
         # update programs list
@@ -254,54 +256,63 @@ class BottleView(Adw.PreferencesPage):
                 "executable": basename,
                 "name": basename[:-4],
                 "path": path,
-                "id": _uuid
+                "id": _uuid,
+                "folder": ManagerUtils.get_exe_parent_dir(self.config, path),
             }
             self.config = self.manager.update_config(
                 config=self.config,
                 key=_uuid,
                 value=_program,
                 scope="External_Programs",
-                fallback=True
+                fallback=True,
             ).data["config"]
             self.update_programs(config=self.config, force_add=_program)
-            self.window.show_toast(_("\"{0}\" added").format(basename[:-4]))
+            self.window.show_toast(_('"{0}" added').format(basename[:-4]))
 
         dialog = Gtk.FileChooserNative.new(
             title=_("Select Executable"),
             action=Gtk.FileChooserAction.OPEN,
             parent=self.window,
-            accept_label=_("Add")
+            accept_label=_("Add"),
         )
 
         add_executable_filters(dialog)
+        add_all_filters(dialog)
         dialog.set_modal(True)
         dialog.connect("response", set_path)
         dialog.show()
 
-    def update_programs(self, config: Optional[BottleConfig] = None, force_add: dict = None):
+    def update_programs(
+        self, config: Optional[BottleConfig] = None, force_add: dict = None
+    ):
         """
         This function update the programs lists.
         """
         if config:
             if not isinstance(config, BottleConfig):
-                raise TypeError("config param need BottleConfig type, but it was %s" % type(config))
+                raise TypeError(
+                    "config param need BottleConfig type, but it was %s" % type(config)
+                )
             self.config = config
 
         if not force_add:
             GLib.idle_add(self.empty_list)
 
-        def new_program(_program, check_boot=None, is_steam=False,
-                        wineserver_status=False):
+        def new_program(
+            _program, check_boot=None, is_steam=False, wineserver_status=False
+        ):
             if check_boot is None:
                 check_boot = wineserver_status
 
-            self.add_program(ProgramEntry(
-                self.window,
-                self.config,
-                _program,
-                is_steam=is_steam,
-                check_boot=check_boot,
-            ))
+            self.add_program(
+                ProgramEntry(
+                    self.window,
+                    self.config,
+                    _program,
+                    is_steam=is_steam,
+                    check_boot=check_boot,
+                )
+            )
 
         if force_add:
             wineserver_status = WineServer(self.config).is_alive()
@@ -311,6 +322,7 @@ class BottleView(Adw.PreferencesPage):
         def process_programs():
             wineserver_status = WineServer(self.config).is_alive()
             programs = self.manager.get_programs(self.config)
+            programs = sorted(programs, key=lambda p: p.get("name", "").lower())
             handled = 0
 
             if self.config.Environment == "Steam":
@@ -320,7 +332,9 @@ class BottleView(Adw.PreferencesPage):
             for program in programs:
                 if program.get("removed"):
                     if self.show_hidden:
-                        GLib.idle_add(new_program, program, None, False, wineserver_status)
+                        GLib.idle_add(
+                            new_program, program, None, False, wineserver_status
+                        )
                         handled += 1
                     continue
                 GLib.idle_add(new_program, program, None, False, wineserver_status)
@@ -334,16 +348,18 @@ class BottleView(Adw.PreferencesPage):
         self.__registry.append(widget)
         self.group_programs.remove(self.bottom_bar)  # Remove the bottom_bar
         self.group_programs.add(widget)
-        self.group_programs.add(self.bottom_bar)  # Add the bottom_bar back to the bottom
+        self.group_programs.add(
+            self.bottom_bar
+        )  # Add the bottom_bar back to the bottom
 
     def __toggle_removed(self, widget=False):
         """
         This function toggle the show_hidden variable.
         """
         if self.show_hidden:
-            self.btn_toggle_removed.set_property('text', _("Show Hidden Programs"))
+            self.btn_toggle_removed.set_property("text", _("Show Hidden Programs"))
         else:
-            self.btn_toggle_removed.set_property('text', _("Hide Hidden Programs"))
+            self.btn_toggle_removed.set_property("text", _("Hide Hidden Programs"))
         self.show_hidden = not self.show_hidden
         self.update_programs(config=self.config)
 
@@ -380,7 +396,9 @@ class BottleView(Adw.PreferencesPage):
                 if response != Gtk.ResponseType.ACCEPT:
                     return
 
-                self.window.show_toast(_("Launching \"{0}\"…").format(dialog.get_file().get_basename()))
+                self.window.show_toast(
+                    _('Launching "{0}"…').format(dialog.get_file().get_basename())
+                )
 
                 executor = WineExecutor(
                     self.config,
@@ -398,7 +416,7 @@ class BottleView(Adw.PreferencesPage):
                 title=_("Select Executable"),
                 action=Gtk.FileChooserAction.OPEN,
                 parent=self.window,
-                accept_label=_("Run")
+                accept_label=_("Run"),
             )
 
             add_executable_filters(dialog)
@@ -407,17 +425,20 @@ class BottleView(Adw.PreferencesPage):
             dialog.connect("response", execute)
             dialog.show()
 
-        if "FLATPAK_ID" in os.environ and self.window.settings.get_boolean("show-sandbox-warning"):
-            dialog = Adw.MessageDialog.new(
-                self.window,
-                _("Be Aware of Sandbox"),
-                _("Bottles is running in a sandbox, a restricted permission environment needed to keep you safe. If the program won't run, consider moving inside the bottle (3 dots icon on the top), then launch from there.")
-            )
-            dialog.add_response("ok", _("_Dismiss"))
-            dialog.connect("response", show_chooser)
-            dialog.present()
-        else:
-            show_chooser()
+        if Xdp.Portal.running_under_sandbox():
+            if self.window.settings.get_boolean("show-sandbox-warning"):
+                dialog = Adw.MessageDialog.new(
+                    self.window,
+                    _("Be Aware of Sandbox"),
+                    _(
+                        "Bottles is running in a sandbox, a restricted permission environment needed to keep you safe. If the program won't run, consider moving inside the bottle (3 dots icon on the top), then launch from there."
+                    ),
+                )
+                dialog.add_response("dismiss", _("_Dismiss"))
+                dialog.connect("response", show_chooser)
+                dialog.present()
+            else:
+                show_chooser()
 
     def __backup(self, widget, backup_type):
         """
@@ -437,9 +458,13 @@ class BottleView(Adw.PreferencesPage):
         @GtkUtils.run_in_main_loop
         def finish(result, error=False):
             if result.ok:
-                self.window.show_toast(_("Backup created for \"{0}\"").format(self.config.Name))
+                self.window.show_toast(
+                    _('Backup created for "{0}"').format(self.config.Name)
+                )
             else:
-                self.window.show_toast(_("Backup failed for \"{0}\"").format(self.config.Name))
+                self.window.show_toast(
+                    _('Backup failed for "{0}"').format(self.config.Name)
+                )
 
         def set_path(_dialog, response):
             if response != Gtk.ResponseType.ACCEPT:
@@ -452,14 +477,14 @@ class BottleView(Adw.PreferencesPage):
                 callback=finish,
                 config=self.config,
                 scope=backup_type,
-                path=path
+                path=path,
             )
 
         dialog = Gtk.FileChooserNative.new(
             title=title,
             action=Gtk.FileChooserAction.SAVE,
             parent=self.window,
-            accept_label=accept_label
+            accept_label=accept_label,
         )
 
         dialog.set_modal(True)
@@ -498,8 +523,14 @@ class BottleView(Adw.PreferencesPage):
 
         dialog = Adw.MessageDialog.new(
             self.window,
-            _("Are you sure you want to permanently delete \"{}\"?".format(self.config['Name'])),
-            _("This will permanently delete all programs and settings associated with it.")
+            _(
+                'Are you sure you want to permanently delete "{}"?'.format(
+                    self.config["Name"]
+                )
+            ),
+            _(
+                "This will permanently delete all programs and settings associated with it."
+            ),
         )
         dialog.add_response("cancel", _("_Cancel"))
         dialog.add_response("ok", _("_Delete"))
@@ -519,8 +550,10 @@ class BottleView(Adw.PreferencesPage):
         dialog = Adw.MessageDialog.new(
             self.window,
             _("Missing Runner"),
-            _("The runner requested by this bottle is missing. Install it through \
-the Bottles preferences or choose a new one to run applications.")
+            _(
+                "The runner requested by this bottle is missing. Install it through \
+the Bottles preferences or choose a new one to run applications."
+            ),
         )
         dialog.add_response("ok", _("_Dismiss"))
         dialog.connect("response", handle_response)
@@ -531,10 +564,10 @@ the Bottles preferences or choose a new one to run applications.")
         for widget in widgets:
             widget.set_visible(True)
 
-    '''
+    """
     The following functions are used like wrappers for the
     runner utilities.
-    '''
+    """
 
     def run_winecfg(self, widget):
         program = WineCfg(self.config)
@@ -591,11 +624,11 @@ the Bottles preferences or choose a new one to run applications.")
         wineboot = WineBoot(self.config)
         widget.set_sensitive(False)
 
-        if status == 0:
+        if status in [-2, 0]:
             dialog = Adw.MessageDialog.new(
                 self.window,
                 _("Are you sure you want to force stop all processes?"),
-                _("This can cause data loss, corruption, and programs to malfunction.")
+                _("This can cause data loss, corruption, and programs to malfunction."),
             )
             dialog.add_response("cancel", _("_Cancel"))
             dialog.add_response("ok", _("Force _Stop"))

@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from gettext import gettext as _
+
 from gi.repository import Gtk, Adw
 
 from bottles.backend.utils.manager import ManagerUtils
@@ -22,9 +24,9 @@ from bottles.backend.utils.threading import RunAsync
 from bottles.frontend.utils.gtk import GtkUtils
 
 
-@Gtk.Template(resource_path='/com/usebottles/bottles/importer-entry.ui')
+@Gtk.Template(resource_path="/com/usebottles/bottles/importer-entry.ui")
 class ImporterEntry(Adw.ActionRow):
-    __gtype_name__ = 'ImporterEntry'
+    __gtype_name__ = "ImporterEntry"
 
     # region Widgets
     label_manager = Gtk.Template.Child()
@@ -65,7 +67,9 @@ class ImporterEntry(Adw.ActionRow):
             self.img_lock.set_visible(result.ok)
 
             if result.ok:
-                self.window.show_toast(_("\"{0}\" imported").format(self.prefix.get("Name")))
+                self.window.show_toast(
+                    _('"{0}" imported').format(self.prefix.get("Name"))
+                )
 
             self.set_sensitive(True)
 
@@ -74,5 +78,5 @@ class ImporterEntry(Adw.ActionRow):
         RunAsync(
             self.import_manager.import_wineprefix,
             callback=set_imported,
-            wineprefix=self.prefix
+            wineprefix=self.prefix,
         )

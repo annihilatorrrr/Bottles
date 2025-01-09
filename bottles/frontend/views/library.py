@@ -16,7 +16,6 @@
 #
 
 import contextlib
-import re
 from gettext import gettext as _
 
 from gi.repository import Gtk, Adw, GObject
@@ -26,9 +25,9 @@ from bottles.frontend.utils.gtk import GtkUtils
 from bottles.frontend.widgets.library import LibraryEntry
 
 
-@Gtk.Template(resource_path='/com/usebottles/bottles/library.ui')
+@Gtk.Template(resource_path="/com/usebottles/bottles/library.ui")
 class LibraryView(Adw.Bin):
-    __gtype_name__ = 'LibraryView'
+    __gtype_name__ = "LibraryView"
 
     # region Widgets
     scroll_window = Gtk.Template.Child()
@@ -37,7 +36,7 @@ class LibraryView(Adw.Bin):
     style_provider = Gtk.CssProvider()
     # endregion
 
-    items_per_line = GObject.property(type=int, default=0)
+    items_per_line = GObject.property(type=int, default=0)  # type: ignore
 
     def __init__(self, window, **kwargs):
         super().__init__(**kwargs)
@@ -76,11 +75,11 @@ class LibraryView(Adw.Bin):
         entry.hide()
         self.items_per_line -= 1
         self.window.show_toast(
-            message=_("\"{0}\" removed from the library.").format(entry.name),
+            message=_('"{0}" removed from the library.').format(entry.name),
             timeout=5,
             action_label=_("Undo"),
             action_callback=undo_callback,
-            dismissed_callback=dismissed_callback
+            dismissed_callback=dismissed_callback,
         )
 
     def __delete_entry(self, entry):

@@ -1,4 +1,4 @@
-from typing import NewType, Optional
+from typing import Optional
 
 from bottles.backend.logger import Logger
 from bottles.backend.wine.wineprogram import WineProgram
@@ -23,4 +23,3 @@ class Notepad(WineProgram):
         if printer_name:
             args = f"/pt {path} {printer_name}"
         return self.launch(args=args, communicate=True, action_name="print")
-

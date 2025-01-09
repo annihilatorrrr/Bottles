@@ -16,6 +16,7 @@
 #
 
 from datetime import datetime
+from gettext import gettext as _
 
 from gi.repository import Gtk, Adw
 
@@ -23,9 +24,9 @@ from bottles.backend.utils.threading import RunAsync
 from bottles.frontend.utils.gtk import GtkUtils
 
 
-@Gtk.Template(resource_path='/com/usebottles/bottles/state-entry.ui')
+@Gtk.Template(resource_path="/com/usebottles/bottles/state-entry.ui")
 class StateEntry(Adw.ActionRow):
-    __gtype_name__ = 'StateEntry'
+    __gtype_name__ = "StateEntry"
 
     # region Widgets
     btn_restore = Gtk.Template.Child()
@@ -46,7 +47,9 @@ class StateEntry(Adw.ActionRow):
         if config.Versioning:
             self.state_name = "#{} - {}".format(
                 state[0],
-                datetime.strptime(state[1]["Creation_Date"], "%Y-%m-%d %H:%M:%S.%f").strftime("%d %B %Y, %H:%M")
+                datetime.strptime(
+                    state[1]["Creation_Date"], "%Y-%m-%d %H:%M:%S.%f"
+                ).strftime("%d %B %Y, %H:%M"),
             )
 
             self.set_subtitle(self.state[1]["Comment"])
@@ -55,7 +58,9 @@ class StateEntry(Adw.ActionRow):
         else:
             self.state_name = "{} - {}".format(
                 state[0],
-                datetime.fromtimestamp(state[1]["timestamp"]).strftime("%d %B %Y, %H:%M")
+                datetime.fromtimestamp(state[1]["timestamp"]).strftime(
+                    "%d %B %Y, %H:%M"
+                ),
             )
             self.set_subtitle(state[1]["message"])
             if active:
@@ -72,22 +77,39 @@ class StateEntry(Adw.ActionRow):
         """
         Set the bottle state to this one.
         """
-        self.queue.add_task()
-        self.parent.set_sensitive(False)
-        self.spinner.show()
-        self.spinner.start()
 
-        def _after():
-            self.window.page_details.view_versioning.update(None, self.config)  # update states
-            self.manager.update_bottles()  # update bottles
+        def handle_response(dialog, response_id):
+            if response_id == "ok":
+                self.queue.add_task()
+                self.parent.set_sensitive(False)
+                self.spinner.show()
+                self.spinner.start()
 
-        RunAsync(
-            task_func=self.versioning_manager.set_state,
-            callback=self.set_completed,
-            config=self.config,
-            state_id=self.state[0],
-            after=_after
+                def _after():
+                    self.window.page_details.view_versioning.update(None, self.config)
+                    self.manager.update_bottles()
+
+                RunAsync(
+                    task_func=self.versioning_manager.set_state,
+                    callback=self.set_completed,
+                    config=self.config,
+                    state_id=self.state[0],
+                    after=_after,
+                )
+            dialog.destroy()
+
+        dialog = Adw.MessageDialog.new(
+            self.window,
+            _("Are you sure you want to restore this state?"),
+            _(
+                "Restoring this state will overwrite the current configuration and cannot be undone."
+            ),
         )
+        dialog.add_response("cancel", _("_Cancel"))
+        dialog.add_response("ok", _("_Restore"))
+        dialog.set_response_appearance("ok", Adw.ResponseAppearance.SUGGESTED)
+        dialog.connect("response", handle_response)
+        dialog.present()
 
     @GtkUtils.run_in_main_loop
     def set_completed(self, result, error=False):

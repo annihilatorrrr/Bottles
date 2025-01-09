@@ -2,7 +2,7 @@ import dataclasses
 from enum import Enum
 from gettext import gettext as _
 from threading import Lock as PyLock, Event as PyEvent
-from typing import Dict, Callable, Optional, Union, Protocol, List
+from typing import Dict, Callable, Optional, Protocol, List
 from uuid import UUID, uuid4
 
 from bottles.backend.logger import Logger
@@ -26,12 +26,20 @@ class Events(Enum):
 
 class Signals(Enum):
     """Signals backend support"""
+
     ManagerLocalBottlesLoaded = "Manager.local_bottles_loaded"  # no extra data
 
+    ForceStopNetworking = (
+        "LoadingView.stop_networking"  # status(bool): Force Stop network operations
+    )
     RepositoryFetched = "RepositoryManager.repo_fetched"  # status: fetch success or not, data(int): total repositories
-    NetworkStatusChanged = "ConnectionUtils.status_changed"  # status(bool): network ready or not
+    NetworkStatusChanged = (
+        "ConnectionUtils.status_changed"  # status(bool): network ready or not
+    )
 
-    GNotification = "G.send_notification"  # data(Notification): data for Gio notification
+    GNotification = (
+        "G.send_notification"  # data(Notification): data for Gio notification
+    )
     GShowUri = "G.show_uri"  # data(str): the URI
 
     # data(UUID): the UUID of task
@@ -47,7 +55,12 @@ class Status(Enum):
 
 
 class TaskStreamUpdateHandler(Protocol):
-    def __call__(self, received_size: int = 0, total_size: int = 0, status: Optional[Status] = None) -> None: ...
+    def __call__(
+        self,
+        received_size: int = 0,
+        total_size: int = 0,
+        status: Optional[Status] = None,
+    ) -> None: ...
 
 
 class SignalHandler(Protocol):
@@ -69,20 +82,28 @@ class Task:
     hidden: bool = False  # hide from UI
     cancellable: bool = False
 
-    def __init__(self, title: str = "Task", subtitle: str = "", hidden: bool = False, cancellable: bool = False):
+    def __init__(
+        self,
+        title: str = "Task",
+        subtitle: str = "",
+        hidden: bool = False,
+        cancellable: bool = False,
+    ):
         self.title = title
         self.subtitle = subtitle
         self.hidden = hidden
         self.cancellable = cancellable
 
     @property
-    def task_id(self) -> UUID:
+    def task_id(self) -> Optional[UUID]:
         return self._task_id
 
     @task_id.setter
     def task_id(self, value: UUID):
         if self._task_id is not None:
-            raise NotImplementedError("Invalid usage, Task.task_id should only set once")
+            raise NotImplementedError(
+                "Invalid usage, Task.task_id should only set once"
+            )
         self._task_id = value
 
     @property
@@ -94,7 +115,12 @@ class Task:
         self._subtitle = value
         SignalManager.send(Signals.TaskUpdated, Result(True, self.task_id))
 
-    def stream_update(self, received_size: int = 0, total_size: int = 0, status: Optional[Status] = None):
+    def stream_update(
+        self,
+        received_size: int = 0,
+        total_size: int = 0,
+        status: Optional[Status] = None,
+    ):
         """This is a default subtitle updating handler for streaming downloading progress"""
         match status:
             case Status.DONE | Status.FAILED:
@@ -141,6 +167,7 @@ class EventManager:
     You can wait for the event to occur, or set it when the associated operations are finished.
     Wait for an event that has already been set, will immediately return.
     """
+
     _EVENTS: Dict[Events, PyEvent] = {}
 
     @classmethod
@@ -166,6 +193,7 @@ class EventManager:
 
 class TaskManager:
     """Long-running tasks are registered here, for tracking and display them on UI"""
+
     _TASKS: Dict[UUID, Task] = {}  # {UUID4: Task}
 
     @classmethod
@@ -182,7 +210,7 @@ class TaskManager:
         return uniq
 
     @classmethod
-    def remove(cls, task: Union[UUID, Task]):
+    def remove(cls, task: UUID | Task):
         if isinstance(task, Task):
             task = task.task_id
         cls._TASKS.pop(task)
@@ -191,6 +219,7 @@ class TaskManager:
 
 class SignalManager:
     """sync backend state to frontend via registered signal handlers"""
+
     _SIGNALS: Dict[Signals, List[SignalHandler]] = {}
 
     @classmethod

@@ -1,5 +1,5 @@
 import os
-from typing import Union, Optional
+from typing import Optional
 
 from bottles.backend.logger import Logger
 from bottles.backend.globals import Paths
@@ -19,7 +19,9 @@ class WineProgram:
 
     def __init__(self, config: BottleConfig, silent=False):
         if not isinstance(config, BottleConfig):
-            raise TypeError("config should be BottleConfig type, but it was %s" % type(config))
+            raise TypeError(
+                "config should be BottleConfig type, but it was %s" % type(config)
+            )
         self.config = config
         self.silent = silent
 
@@ -35,14 +37,16 @@ class WineProgram:
         return command
 
     def launch(
-            self,
-            args: Union[tuple, str] | None = None,
-            terminal: bool = False,
-            minimal: bool = True,
-            communicate: bool = False,
-            environment: Optional[dict] = None,
-            cwd: Optional[str] = None,
-            action_name: str = "launch"
+        self,
+        args: tuple | str | None = None,
+        terminal: bool = False,
+        minimal: bool = True,
+        communicate: bool = False,
+        environment: Optional[dict] = None,
+        pre_script: Optional[str] = None,
+        post_script: Optional[str] = None,
+        cwd: Optional[str] = None,
+        action_name: str = "launch",
     ):
         if environment is None:
             environment = {}
@@ -66,9 +70,14 @@ class WineProgram:
             communicate=communicate,
             colors=self.colors,
             environment=environment,
+            pre_script=pre_script,
+            post_script=post_script,
             cwd=cwd,
-            arguments=program_args
-        ).run()
+            arguments=program_args,
+        )
+
+        # logging.info("Executing command:", res.command)
+        res = res.run()
         return res
 
     def launch_terminal(self, args: Optional[str] = None):

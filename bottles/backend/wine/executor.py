@@ -1,8 +1,11 @@
 import os
 import shlex
 import uuid
-from typing import Union, Optional
+from typing import Optional
 
+from bottles.backend.dlls.dxvk import DXVKComponent
+from bottles.backend.dlls.nvapi import NVAPIComponent
+from bottles.backend.dlls.vkd3d import VKD3DComponent
 from bottles.backend.logger import Logger
 from bottles.backend.models.config import BottleConfig
 from bottles.backend.models.result import Result
@@ -19,24 +22,25 @@ logging = Logger()
 
 
 class WineExecutor:
-
     def __init__(
-            self,
-            config: BottleConfig,
-            exec_path: str,
-            args: str = "",
-            terminal: bool = False,
-            cwd: Optional[str] = None,
-            environment: Optional[dict] = None,
-            move_file: bool = False,
-            move_upd_fn: callable = None,
-            post_script: Optional[str] = None,
-            monitoring: Optional[list] = None,
-            override_dxvk: Optional[bool] = None,
-            override_vkd3d: Optional[bool] = None,
-            override_nvapi: Optional[bool] = None,
-            override_fsr: Optional[bool] = None,
-            override_virt_desktop: Optional[bool] = None
+        self,
+        config: BottleConfig,
+        exec_path: str,
+        args: str = "",
+        terminal: bool = False,
+        environment: Optional[dict] = None,
+        move_file: bool = False,
+        move_upd_fn: callable = None,
+        pre_script: Optional[str] = None,
+        post_script: Optional[str] = None,
+        cwd: Optional[str] = None,
+        monitoring: Optional[list] = None,
+        program_dxvk: Optional[bool] = None,
+        program_vkd3d: Optional[bool] = None,
+        program_nvapi: Optional[bool] = None,
+        program_fsr: Optional[bool] = None,
+        program_gamescope: Optional[bool] = None,
+        program_virt_desktop: Optional[bool] = None,
     ):
         logging.info("Launching an executable…")
         self.config = config
@@ -55,74 +59,80 @@ class WineExecutor:
         self.exec_path = shlex.quote(exec_path)
         self.args = args
         self.terminal = terminal
-        self.cwd = self.__get_cwd(cwd)
         self.environment = environment
+        self.pre_script = pre_script
         self.post_script = post_script
+        self.cwd = self.__get_cwd(cwd)
         self.monitoring = monitoring
-        self.use_virt_desktop = override_virt_desktop
+        self.use_gamescope = program_gamescope
+        self.use_virt_desktop = program_virt_desktop
 
         env_dll_overrides = []
-        if override_dxvk is not None \
-                and not override_dxvk \
-                and self.config.Parameters.dxvk:
-            env_dll_overrides.append("d3d9,d3d11,d3d10core,dxgi=b")
 
-        if override_vkd3d is not None \
-                and not override_vkd3d \
-                and self.config.Parameters.vkd3d:
-            env_dll_overrides.append("d3d12=b;d3d12core=b,n")
+        # None = use global DXVK value
+        if program_dxvk is not None:
+            # DXVK is globally activated, but disabled for the program
+            if not program_dxvk and self.config.Parameters.dxvk:
+                # Disable DXVK for the program
+                override_dxvk = DXVKComponent.get_override_keys() + "=b"
+                env_dll_overrides.append(override_dxvk)
 
-        if override_nvapi is not None \
-                and not override_nvapi \
-                and self.config.Parameters.dxvk_nvapi:
-            env_dll_overrides.append("nvapi,nvapi64=b")
+        if program_vkd3d is not None:
+            if not program_vkd3d and self.config.Parameters.vkd3d:
+                override_vkd3d = VKD3DComponent.get_override_keys() + "=b"
+                env_dll_overrides.append(override_vkd3d)
 
-        if override_fsr is not None and override_fsr:
-            self.environment["WINE_FULLSCREEN_FSR"] = "1"
-            self.environment["WINE_FULLSCREEN_FSR_STRENGTH"] = str(self.config.Parameters.fsr_sharpening_strength)
+        if program_nvapi is not None:
+            if not program_nvapi and self.config.Parameters.dxvk_nvapi:
+                override_nvapi = NVAPIComponent.get_override_keys() + "=b"
+                env_dll_overrides.append(override_nvapi)
 
-        if "WINEDLLOVERRIDES" in self.environment:
-            self.environment["WINEDLLOVERRIDES"] += "," + ",".join(env_dll_overrides)
-        else:
-            self.environment["WINEDLLOVERRIDES"] = ",".join(env_dll_overrides)
+        if program_fsr is not None and program_fsr != self.config.Parameters.fsr:
+            self.environment["WINE_FULLSCREEN_FSR"] = "1" if program_fsr else "0"
+            self.environment["WINE_FULLSCREEN_FSR_STRENGTH"] = str(
+                self.config.Parameters.fsr_sharpening_strength
+            )
+            if self.config.Parameters.fsr_quality_mode:
+                self.environment["WINE_FULLSCREEN_FSR_MODE"] = str(
+                    self.config.Parameters.fsr_quality_mode
+                )
+
+        if (
+            program_gamescope is not None
+            and program_gamescope != self.config.Parameters.gamescope
+        ):
+            self.environment["GAMESCOPE"] = "1" if program_gamescope else "0"
+
+        if env_dll_overrides:
+            if "WINEDLLOVERRIDES" in self.environment:
+                self.environment["WINEDLLOVERRIDES"] += ";" + ";".join(
+                    env_dll_overrides
+                )
+            else:
+                self.environment["WINEDLLOVERRIDES"] = ";".join(env_dll_overrides)
 
     @classmethod
     def run_program(cls, config: BottleConfig, program: dict, terminal: bool = False):
         if program is None:
             logging.warning("The program entry is not well formatted.")
 
-        dxvk = config.Parameters.dxvk
-        vkd3d = config.Parameters.vkd3d
-        nvapi = config.Parameters.dxvk_nvapi
-        fsr = config.Parameters.fsr
-        virt_desktop = config.Parameters.virtual_desktop
-
-        if program.get("dxvk") != dxvk:
-            dxvk = program.get("dxvk")
-        if program.get("vkd3d") != vkd3d:
-            vkd3d = program.get("vkd3d")
-        if program.get("dxvk_nvapi") != nvapi:
-            nvapi = program.get("dxvk_nvapi")
-        if program.get("fsr") != fsr:
-            fsr = program.get("fsr")
-        if program.get("virtual_desktop") != virt_desktop:
-            virt_desktop = program.get("virtual_desktop")
-
         return cls(
             config=config,
-            exec_path=program["path"],
-            args=program.get("arguments", ""),
-            cwd=program.get("folder", None),
-            post_script=program.get("script", None),
+            exec_path=program.get("path"),
+            args=program.get("arguments"),
+            pre_script=program.get("pre_script"),
+            post_script=program.get("post_script"),
+            cwd=program.get("folder"),
             terminal=terminal,
-            override_dxvk=dxvk,
-            override_vkd3d=vkd3d,
-            override_nvapi=nvapi,
-            override_fsr=fsr,
-            override_virt_desktop=virt_desktop
+            program_dxvk=program.get("dxvk"),
+            program_vkd3d=program.get("vkd3d"),
+            program_nvapi=program.get("dxvk_nvapi"),
+            program_fsr=program.get("fsr"),
+            program_gamescope=program.get("gamescope"),
+            program_virt_desktop=program.get("virtual_desktop"),
         ).run()
 
-    def __get_cwd(self, cwd: str) -> Union[str, None]:
+    def __get_cwd(self, cwd: str) -> str | None:
         winepath = WinePath(self.config)
         if cwd in [None, ""]:
             path = self.exec_path
@@ -150,14 +160,14 @@ class WineExecutor:
             _msg = f"Executable file path does not exist: {exec_path}"
             if "FLATPAK_ID" in os.environ:
                 _msg = f"Executable file path does not exist or is not accessible by the Flatpak: {exec_path}"
-            logging.error(_msg, )
+            logging.error(
+                _msg,
+            )
             return False
 
     def __move_file(self, exec_path, move_upd_fn):
         new_path = ManagerUtils.move_file_to_bottle(
-            file_path=exec_path,
-            config=self.config,
-            fn_update=move_upd_fn
+            file_path=exec_path, config=self.config, fn_update=move_upd_fn
         )
         if new_path:
             exec_path = new_path
@@ -180,7 +190,7 @@ class WineExecutor:
         if _exec.endswith(".dll"):
             return "dll"
 
-        logging.warning(f"Not a common executable type, trying to launch it anyway.")
+        logging.warning("Not a common executable type, trying to launch it anyway.")
         return "unsupported"
 
     def run_cli(self):
@@ -200,12 +210,11 @@ class WineExecutor:
             terminal=self.terminal,
             args=self.args,
             environment=self.environment,
-            cwd=self.cwd
+            pre_script=self.pre_script,
+            post_script=self.post_script,
+            cwd=self.cwd,
         )
-        return Result(
-            status=True,
-            data={"output": res}
-        )
+        return Result(status=True, data={"output": res})
 
     def run(self) -> Result:
         match self.exec_type:
@@ -219,8 +228,7 @@ class WineExecutor:
                 return self.__launch_dll()
             case _:
                 return Result(
-                    status=False,
-                    data={"message": "Unknown executable type."}
+                    status=False, data={"message": "Unknown executable type."}
                 )
 
     def __launch_with_bridge(self):
@@ -247,10 +255,9 @@ class WineExecutor:
             case "batch":
                 return self.__launch_batch()
             case _:
-                logging.error(f'exec_type {self.exec_type} is not valid')
+                logging.error(f"exec_type {self.exec_type} is not valid")
                 return Result(
-                    status=False,
-                    data={"message": "Unknown executable type."}
+                    status=False, data={"message": "Unknown executable type."}
                 )
 
     def __launch_exe(self):
@@ -267,17 +274,15 @@ class WineExecutor:
             command=self.exec_path,
             arguments=self.args,
             terminal=self.terminal,
-            cwd=self.cwd,
             environment=self.environment,
             communicate=True,
-            post_script=self.post_script
+            pre_script=self.pre_script,
+            post_script=self.post_script,
+            cwd=self.cwd,
         )
         res = winecmd.run()
         self.__set_monitors()
-        return Result(
-            status=True,
-            data={"output": res}
-        )
+        return Result(status=True, data={"output": res})
 
     def __launch_msi(self):
         msiexec = MsiExec(self.config)
@@ -286,7 +291,7 @@ class WineExecutor:
             args=self.args,
             terminal=self.terminal,
             cwd=self.cwd,
-            environment=self.environment
+            environment=self.environment,
         )
         self.__set_monitors()
         return Result(True)
@@ -298,12 +303,9 @@ class WineExecutor:
             terminal=self.terminal,
             args=self.args,
             environment=self.environment,
-            cwd=self.cwd
+            cwd=self.cwd,
         )
-        return Result(
-            status=True,
-            data={"output": res}
-        )
+        return Result(status=True, data={"output": res})
 
     def __launch_with_starter(self):
         start = Start(self.config)
@@ -312,13 +314,12 @@ class WineExecutor:
             terminal=self.terminal,
             args=self.args,
             environment=self.environment,
-            cwd=self.cwd
+            pre_script=self.pre_script,
+            post_script=self.post_script,
+            cwd=self.cwd,
         )
         self.__set_monitors()
-        return Result(
-            status=True,
-            data={"output": res}
-        )
+        return Result(status=True, data={"output": res})
 
     def __launch_with_explorer(self):
         w, h = self.config.Parameters.virtual_desktop_res.split("x")
@@ -330,21 +331,15 @@ class WineExecutor:
             program=self.exec_path,
             args=self.args,
             environment=self.environment,
-            cwd=self.cwd
+            cwd=self.cwd,
         )
         self.__set_monitors()
-        return Result(
-            status=res.status,
-            data={"output": res.data}
-        )
+        return Result(status=res.status, data={"output": res.data})
 
     @staticmethod
     def __launch_dll():
         logging.warning("DLLs are not supported yet.")
-        return Result(
-            status=False,
-            data={"error": "DLLs are not supported yet."}
-        )
+        return Result(status=False, data={"error": "DLLs are not supported yet."})
 
     def __set_monitors(self):
         if not self.monitoring:

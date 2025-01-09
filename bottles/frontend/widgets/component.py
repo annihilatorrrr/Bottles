@@ -29,12 +29,12 @@ from bottles.frontend.utils.gtk import GtkUtils
 logging = Logger()
 
 
-@Gtk.Template(resource_path='/com/usebottles/bottles/component-entry.ui')
+@Gtk.Template(resource_path="/com/usebottles/bottles/component-entry.ui")
 class ComponentEntry(Adw.ActionRow):
-    __gtype_name__ = 'ComponentEntry'
+    __gtype_name__ = "ComponentEntry"
     __gsignals__ = {
-        'component-installed': (GObject.SIGNAL_RUN_FIRST, None, ()),
-        'component-error': (GObject.SIGNAL_RUN_FIRST, None, ())
+        "component-installed": (GObject.SIGNAL_RUN_FIRST, None, ()),
+        "component-error": (GObject.SIGNAL_RUN_FIRST, None, ()),
     }
 
     # region Widgets
@@ -48,7 +48,9 @@ class ComponentEntry(Adw.ActionRow):
 
     # endregion
 
-    def __init__(self, window, component, component_type, is_upgradable=False, **kwargs):
+    def __init__(
+        self, window, component, component_type, is_upgradable=False, **kwargs
+    ):
         super().__init__(**kwargs)
 
         # common variables and references
@@ -61,17 +63,20 @@ class ComponentEntry(Adw.ActionRow):
 
         # populate widgets
         self.set_title(self.name)
+        self.set_can_focus(False)
 
         if component[1].get("Installed"):
             self.btn_browse.set_visible(True)
-            if not self.manager.component_manager.is_in_use(self.component_type, self.name):
+            if not self.manager.component_manager.is_in_use(
+                self.component_type, self.name
+            ):
                 self.btn_remove.set_visible(True)
         else:
             self.btn_download.set_visible(True)
             self.btn_browse.set_visible(False)
 
         if is_upgradable:
-            self.btn_download.set_icon_name('software-update-available-symbolic')
+            self.btn_download.set_icon_name("software-update-available-symbolic")
             self.btn_download.set_tooltip_text(_("Upgrade"))
 
         # connect signals
@@ -88,6 +93,10 @@ class ComponentEntry(Adw.ActionRow):
 
             return self.update_progress(status=Status.FAILED)
 
+        @GtkUtils.run_in_main_loop
+        def async_func(*args, **kwargs):
+            return self.update_progress(*args, **kwargs)
+
         self.btn_download.set_visible(False)
         self.btn_cancel.set_visible(False)  # TODO: unimplemented
         self.box_download_status.set_visible(True)
@@ -97,7 +106,7 @@ class ComponentEntry(Adw.ActionRow):
             callback=async_callback,
             component_type=self.component_type,
             component_name=self.name,
-            func=self.update_progress
+            func=async_func,
         )
 
     def uninstall(self, widget):
@@ -115,27 +124,31 @@ class ComponentEntry(Adw.ActionRow):
             task_func=self.component_manager.uninstall,
             callback=update,
             component_type=self.component_type,
-            component_name=self.name
+            component_name=self.name,
         )
 
     def run_browse(self, widget):
         self.btn_download.set_visible(False)
 
         ManagerUtils.open_filemanager(
-            path_type=self.component_type,
-            component=self.name
+            path_type=self.component_type, component=self.name
         )
 
-    def update_progress(self, received_size: int = 0, total_size: int = 0, status: Optional[Status] = None):
+    def update_progress(
+        self,
+        received_size: int = 0,
+        total_size: int = 0,
+        status: Optional[Status] = None,
+    ):
         if status == Status.FAILED:
-            logging.error(f"Component installation failed")
+            logging.error("Component installation failed")
             self.set_err()
             return False
 
         self.box_download_status.set_visible(True)
 
         percent = int(received_size * 100 / total_size)
-        self.label_task_status.set_text(f'{percent}%')
+        self.label_task_status.set_text(f"{percent}%")
 
         if percent >= 100:
             self.label_task_status.set_text(_("Installing…"))
@@ -156,15 +169,20 @@ class ComponentEntry(Adw.ActionRow):
         self.box_download_status.set_visible(False)
         self.btn_browse.set_visible(True)
         self.btn_cancel.set_visible(False)
+        if not self.manager.component_manager.is_in_use(self.component_type, self.name):
+            self.btn_remove.set_visible(True)
 
     def set_uninstalled(self):
         self.btn_browse.set_visible(False)
         self.btn_err.set_visible(False)
         self.btn_download.set_visible(True)
+        if self.name in self.manager.get_offline_components(
+            self.component_type, self.name
+        ):
+            self.set_visible(False)
 
 
 class ComponentExpander(Adw.ExpanderRow):
-
     def __init__(self, title, subtitle=None, **kwargs):
         super().__init__(**kwargs)
 

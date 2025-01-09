@@ -15,12 +15,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from gi.repository import Gtk, GLib, Adw
+from gi.repository import Gtk, Adw
 
 
-@Gtk.Template(resource_path='/com/usebottles/bottles/dialog-proton-alert.ui')
+@Gtk.Template(resource_path="/com/usebottles/bottles/dialog-proton-alert.ui")
 class ProtonAlertDialog(Adw.Window):
-    __gtype_name__ = 'ProtonAlertDialog'
+    __gtype_name__ = "ProtonAlertDialog"
     __resources = {}
 
     # region Widgets

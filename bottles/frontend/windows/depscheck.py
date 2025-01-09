@@ -15,12 +15,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from gi.repository import Gtk, GLib, Adw
+from gi.repository import Gtk, Adw
 
 
-@Gtk.Template(resource_path='/com/usebottles/bottles/dialog-deps-check.ui')
+@Gtk.Template(resource_path="/com/usebottles/bottles/dialog-deps-check.ui")
 class DependenciesCheckDialog(Adw.Window):
-    __gtype_name__ = 'DependenciesCheckDialog'
+    __gtype_name__ = "DependenciesCheckDialog"
 
     # region widgets
     btn_quit = Gtk.Template.Child()
