@@ -1,0 +1,375 @@
+{
+    "id": "com.usebottles.bottles.Devel",
+    "sdk": "org.gnome.Sdk",
+    "runtime": "org.gnome.Platform",
+    "base": "org.winehq.Wine",
+    "base-version": "stable-24.08",
+    "runtime-version": "47",
+    "command": "bottles",
+    "finish-args": [
+        "--allow=devel",
+        "--allow=multiarch",
+        "--allow=per-app-dev-shm",
+        "--share=network",
+        "--share=ipc",
+        "--socket=x11",
+        "--socket=wayland",
+        "--socket=pulseaudio",
+        "--device=all",
+        "--system-talk-name=org.freedesktop.UDisks2",
+        "--env=LD_LIBRARY_PATH=/app/lib:/app/lib32",
+        "--env=PATH=/app/bin:/app/utils/bin:/usr/bin:/usr/lib/extensions/vulkan/MangoHud/bin/:/usr/bin:/usr/lib/extensions/vulkan/OBSVkCapture/bin/:/usr/lib/extensions/vulkan/gamescope/bin/",
+        "--env=GST_PLUGIN_SYSTEM_PATH=/app/lib/gstreamer-1.0:/usr/lib/x86_64-linux-gnu/gstreamer-1.0:/app/lib32/gstreamer-1.0:/usr/lib/i386-linux-gnu/gstreamer-1.0",
+        "--require-version=1.1.2"
+    ],
+    "inherit-extensions": [
+        "org.freedesktop.Platform.Compat.i386",
+        "org.freedesktop.Platform.GL32",
+        "org.freedesktop.Platform.ffmpeg-full",
+        "org.freedesktop.Platform.ffmpeg_full.i386",
+        "org.winehq.Wine.gecko",
+        "org.winehq.Wine.mono"
+    ],
+    "add-extensions": {
+        "org.gnome.Platform.Compat.i386": {
+            "directory": "lib/i386-linux-gnu",
+            "version": "47"
+        },
+        "org.gnome.Platform.Compat.i386.Debug": {
+            "directory": "lib/debug/lib/i386-linux-gnu",
+            "version": "47",
+            "no-autodownload": true
+        },
+        "com.valvesoftware.Steam.CompatibilityTool": {
+            "subdirectories": true,
+            "directory": "share/steam/compatibilitytools.d",
+            "version": "stable",
+            "versions": "stable;beta;test",
+            "no-autodownload": true,
+            "autodelete": false
+        },
+        "com.valvesoftware.Steam.Utility": {
+            "subdirectories": true,
+            "directory": "utils",
+            "version": "stable",
+            "versions": "stable;beta;test",
+            "add-ld-path": "lib",
+            "merge-dirs": "bin",
+            "no-autodownload": true,
+            "autodelete": false
+        }
+    },
+    "sdk-extensions": [
+        "org.gnome.Sdk.Compat.i386",
+        "org.freedesktop.Sdk.Extension.toolchain-i386"
+    ],
+    "cleanup": [
+        "/include",
+        "/lib/pkgconfig",
+        "/man",
+        "/share/doc",
+        "/share/gtk-doc",
+        "/share/man",
+        "/share/pkgconfig",
+        "*.la",
+        "*.a"
+    ],
+    "cleanup-commands": [
+        "mkdir -p /app/utils",
+        "mkdir -p /app/share/steam/compatibilitytools.d",
+        "mkdir -p /app/share/vulkan/implicit_layer.d/"
+    ],
+    "modules": [
+        "pypi-deps.yaml",
+        {
+            "name": "vmtouch",
+            "buildsystem": "simple",
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/hoytech/vmtouch",
+                    "commit": "af86e27675843b3c7e4ddfee66ddbaf44eff43c4",
+                    "x-checker-data": {
+                        "type": "json",
+                        "url": "https://api.github.com/repos/hoytech/vmtouch/commits",
+                        "commit-query": "first( .[].sha )",
+                        "timestamp-query": "first( .[].commit.committer.date )"
+                    }
+                }
+            ],
+            "build-commands": [
+                "make",
+                "make install PREFIX=/app"
+            ]
+        },
+        {
+            "name": "vulkan-tools",
+            "buildsystem": "cmake-ninja",
+            "config-opts": [
+                "-DGLSLANG_INSTALL_DIR=/app",
+                "-DVULKAN_HEADERS_INSTALL_DIR=/app",
+                "-DCMAKE_BUILD_TYPE=Release"
+            ],
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/KhronosGroup/Vulkan-Tools.git",
+                    "tag": "vulkan-sdk-1.4.304.0",
+                    "commit": "4c25e78dd87720275ab069de1fe2e005cd528ed9",
+                    "x-checker-data": {
+                        "type": "git",
+                        "tag-pattern": "^vulkan-sdk-([\\d.]+)$"
+                    }
+                }
+            ],
+            "modules": [
+                {
+                    "name": "volk",
+                    "buildsystem": "cmake-ninja",
+                    "config-opts": [
+                        "-DVOLK_INSTALL=ON"
+                    ],
+                    "sources": [
+                        {
+                            "type": "archive",
+                            "url": "https://github.com/zeux/volk/archive/refs/tags/1.4.304.tar.gz",
+                            "sha256": "ab3d4a8ccaeb32652259cdd008399504a41792675b0421d90b67729ee274746f"
+                        }
+                    ]
+                },
+                {
+                    "name": "vulkan-headers",
+                    "buildsystem": "cmake-ninja",
+                    "sources": [
+                        {
+                            "type": "git",
+                            "url": "https://github.com/KhronosGroup/Vulkan-Headers.git",
+                            "tag": "vulkan-sdk-1.4.304.0",
+                            "commit": "d4a196d8c84e032d27f999adcea3075517c1c97f",
+                            "x-checker-data": {
+                                "type": "git",
+                                "tag-pattern": "^vulkan-sdk-([\\d.]+)$"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "xdpyinfo",
+            "buildsystem": "autotools",
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://gitlab.freedesktop.org/xorg/app/xdpyinfo.git",
+                    "tag": "xdpyinfo-1.3.4",
+                    "commit": "ea4083ccb2a5ce4252acabeb2eb7bf49f7be25e0",
+                    "x-checker-data": {
+                        "type": "git",
+                        "tag-pattern": "^xdpyinfo-([\\d.]+)$"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "ImageMagick",
+            "buildsystem": "autotools",
+            "config-opts": [
+                "--disable-static",
+                "--disable-docs",
+                "--with-hdri",
+                "--with-pic"
+            ],
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/ImageMagick/ImageMagick",
+                    "tag": "7.1.1-43",
+                    "commit": "a2d96f40e707ba54b57e7d98c3277d3ea6611ace",
+                    "x-checker-data": {
+                        "type": "git",
+                        "tag-pattern": "^([\\d.]+-[\\d]+)$"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "libportal",
+            "buildsystem": "meson",
+            "config-opts": [
+                "-Dbackend-gtk3=disabled",
+                "-Dbackend-gtk4=enabled",
+                "-Dportal-tests=false",
+                "-Dvapi=false",
+                "-Ddocs=false"
+            ],
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/flatpak/libportal",
+                    "tag": "0.9.0",
+                    "commit": "731e7410fa5765e7c4eb76a51140a19637620c13",
+                    "x-checker-data": {
+                        "type": "git",
+                        "is-important": true,
+                        "tag-pattern": "^([\\d.]+)$"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "blueprint-compiler",
+            "buildsystem": "meson",
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://gitlab.gnome.org/jwestman/blueprint-compiler",
+                    "tag": "v0.16.0",
+                    "commit": "04ef0944db56ab01307a29aaa7303df6067cb3c0",
+                    "x-checker-data": {
+                        "type": "git",
+                        "tag-pattern": "^v([\\d.]+)$"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "vkbasalt-cli",
+            "buildsystem": "simple",
+            "build-commands": [
+                "python3 setup.py install --prefix=/app --root=/"
+            ],
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://gitlab.com/TheEvilSkeleton/vkbasalt-cli",
+                    "tag": "v3.1.1",
+                    "commit": "bba740f77357cfa3558f02f6b8decd8f5a8eaf4e",
+                    "x-checker-data": {
+                        "type": "git",
+                        "is-important": true,
+                        "tag-pattern": "^v([\\d.]+)$"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "EasyTerm",
+            "buildsystem": "simple",
+            "build-commands": [
+                "python3 setup.py install --prefix=/app --root=/"
+            ],
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/bottlesdevs/EasyTerm",
+                    "tag": "0.2.0",
+                    "commit": "6fbeab0470df55aeab141a45763147440b2f0290",
+                    "x-checker-data": {
+                        "type": "git",
+                        "is-important": true,
+                        "tag-pattern": "^([\\d.]+)$"
+                    }
+                }
+            ],
+            "modules": [
+                {
+                    "name": "vte",
+                    "buildsystem": "meson",
+                    "config-opts": [
+                        "-Dvapi=false"
+                    ],
+                    "sources": [
+                        {
+                            "type": "git",
+                            "url": "https://gitlab.gnome.org/GNOME/vte",
+                            "tag": "0.78.3",
+                            "commit": "6f293fa50a52c79a47642875a534dacaf3913a55",
+                            "x-checker-data": {
+                                "type": "git",
+                                "tag-pattern": "^([\\d.]+)$"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "fluidsynth",
+            "buildsystem": "cmake-ninja",
+            "cleanup": [
+                "/bin",
+                "/include",
+                "/lib/cmake",
+                "/lib/pkgconfig",
+                "/share/man",
+                "*.so"
+            ],
+            "sources": [
+                {
+                    "type": "archive",
+                    "url": "https://github.com/FluidSynth/fluidsynth/archive/v2.3.5.tar.gz",
+                    "sha256": "f89e8e983ecfb4a5b4f5d8c2b9157ed18d15ed2e36246fa782f18abaea550e0d"
+                }
+            ]
+        },
+        {
+            "name": "libsass",
+            "buildsystem": "meson",
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/lazka/libsass.git",
+                    "commit": "aac79dccd3c8f7e8f22125f87a119f3b1ee9d487"
+                }
+            ]
+        },
+        {
+            "name": "sassc",
+            "buildsystem": "meson",
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/lazka/sassc.git",
+                    "commit": "a1950c2d95ea4c051feb90bb1f43559fbb54bf36"
+                }
+            ]
+        },
+        {
+            "name": "libadwaita",
+            "buildsystem": "meson",
+            "config-opts": [
+                "-Dexamples=false",
+                "-Dtests=false"
+            ],
+            "cleanup": [
+                "/include",
+                "/lib/pkgconfig",
+                "/libexec",
+                "/share/dbus-1"
+            ],
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://gitlab.gnome.org/GNOME/libadwaita.git",
+                    "tag": "1.7.beta",
+                    "commit": "10dbadc7a770f36e20d5053e6b08676bc36f7957"
+                }
+            ]
+        },
+        {
+            "name": "bottles",
+            "builddir": true,
+            "buildsystem": "meson",
+            "config-opts": [
+                "-Dprofile=development"
+            ],
+            "sources": [
+                {
+                    "type": "dir",
+                    "path": ".."
+                }
+            ]
+        }
+    ]
+}
